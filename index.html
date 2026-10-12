@@ -59,6 +59,7 @@ button:disabled { opacity: .35; cursor: default; }
 .cf { position: absolute; inset: 0; background: var(--plastic); backface-visibility: hidden; }
 .cf::after { content: ""; position: absolute; inset: 4%; border-radius: 12%; background: var(--c, transparent); }
 .cf.forced::before { content: ""; position: absolute; inset: 36%; border-radius: 50%; background: var(--d); z-index: 1; box-shadow: 0 0 0 2px rgba(0,0,0,.3); }
+.cf.nope::after { opacity: .25; }
 .cf.bad::after { box-shadow: inset 0 0 0 calc(var(--s) * .08) var(--bad); }
 .cf.px { transform: rotateY(90deg) translateZ(calc(var(--s) / 2)); }
 .cf.nx { transform: rotateY(-90deg) translateZ(calc(var(--s) / 2)); }
@@ -417,6 +418,7 @@ function makeCube3D(scene, root, onTap) {
           if (deco.bad.has(f.i)) cls += ' bad';
           const p = deco.poss[f.i];
           if (v < 0 && p && !(p & (p - 1))) { cls += ' forced'; f.el.style.setProperty('--d', `var(--c${Math.log2(p)})`); }
+          if (v < 0 && p && deco.brush >= 0 && !(p >> deco.brush & 1)) cls += ' nope'; // picked color can't go here
         }
         if (f.el.className !== cls) f.el.className = cls;
       }
@@ -505,13 +507,13 @@ const pal = $('palette');
 for (let c = 0; c < 6; c++) {
   const b = document.createElement('button');
   b.className = 'sw'; b.dataset.c = c; b.style.setProperty('--c', `var(--c${c})`);
-  b.onclick = () => { brush = c; renderPalette(); };
+  b.onclick = () => { brush = c; render(); };
   pal.appendChild(b);
 }
 const er = document.createElement('button');
 er.className = 'sw erase'; er.dataset.c = -1; er.setAttribute('aria-label', 'Eraser');
 er.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H9l-5-5a2 2 0 010-2.8l8.2-8.2a2 2 0 012.8 0l5 5a2 2 0 010 2.8L13 19"/><path d="M8 9l7 7"/></svg>';
-er.onclick = () => { brush = -1; renderPalette(); };
+er.onclick = () => { brush = -1; render(); };
 pal.appendChild(er);
 function renderPalette() {
   const counts = [0,0,0,0,0,0]; st.forEach(v => { if (v >= 0) counts[v]++; });
@@ -528,6 +530,17 @@ const cube = makeCube3D($('scene'), $('cube3'), i => {
   if (stepping) return;
   if (i % 9 === 4) { toast('Center colors are fixed'); return; }
   const v = brush < 0 || st[i] === brush ? -1 : brush;
+  if (v >= 0 && A && A.total > 0n) {
+    // refuse a color that no real cube allows here, given everything else entered
+    let p = A.poss[i];
+    if (st[i] >= 0) { const t = Int8Array.from(st); t[i] = -1; p = analyze(t).poss[i]; }
+    if (!(p >> v & 1)) {
+      const ok = [0, 1, 2, 3, 4, 5].filter(c => p >> c & 1).map(c => COLOR_NAMES[c]);
+      const name = COLOR_NAMES[v][0].toUpperCase() + COLOR_NAMES[v].slice(1);
+      toast(ok.length && ok.length <= 3 ? `${name} can’t go there. Only ${ok.join(' or ')} fit${ok.length === 1 ? 's' : ''}.` : `${name} can’t go there.`);
+      return;
+    }
+  }
   history.push(Int8Array.from(st)); if (history.length > 300) history.shift();
   st[i] = v; forgetScan(i); render();
 });
@@ -561,7 +574,7 @@ function render() {
   const bad = new Set(); A.bad.forEach(b => b.fs.forEach(i => bad.add(i)));
   const forced = A.total > 0n ? forcedList().length : 0;
   const filled = st.reduce((n, v) => n + (v >= 0 ? 1 : 0), 0) - 6, left = 48 - filled;
-  if (!stepping) cube.set(st, { poss: A.total > 0n ? A.poss : new Uint8Array(54), bad });
+  if (!stepping) cube.set(st, { poss: A.total > 0n ? A.poss : new Uint8Array(54), bad, brush });
 
   $('autofill').textContent = forced ? `Auto-fill +${forced}` : 'Auto-fill';
   $('autofill').disabled = !forced;
