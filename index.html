@@ -1319,7 +1319,7 @@ function gameStatus() {
 function startGame() {
   if (stepping) exitSteps();
   let s = solvedState(); for (const m of scramble()) s = applyMove(s, m);
-  game = { st: s, moves: 0, start: Date.now(), end: 0, hint: null };
+  game = { st: s, moves: 0, start: Date.now(), end: 0, hint: null, plan: null };
   gaming = true; document.body.classList.add('stepping');
   $('editUI').hidden = true; $('stepUI').hidden = true; $('gameUI').hidden = false; $('closeSteps').hidden = false;
   cube.cancel(); showArrow(null); cube.set(s); cube.setView(...HOME, true); cube.onSwipe = playMove;
@@ -1343,19 +1343,28 @@ function playMove(m) {
 }
 async function giveHint() { // only the single next move, and only when asked
   if (!game || game.end || hintBusy) return;
-  hintBusy = true; $('hintBtn').textContent = solver.ready ? 'Thinking…' : 'Warming up…';
   const key = packState(game.st);
-  try {
-    const faceOf = []; for (let f = 0; f < 6; f++) faceOf[game.st[f * 9 + 4]] = FACE[f];
-    const raw = await solver.solve(Array.from(game.st, v => faceOf[v]).join(''));
-    if (!game || packState(game.st) !== key) return; // they moved meanwhile
-    const m = raw.trim().split(/\s+/)[0];
-    if (!m) return;
-    const { f, q } = parseMove(m);
-    game.hint = m; showArrow(m); cube.setView(...VIEWS[f], true); gameStatus();
-    toast(`Turn the ${FACE_NAMES[f].toLowerCase()} layer ${DIR_TEXT[q]}`);
-  } catch (e) { toast('Couldn’t get a hint. Try again.'); }
-  finally { hintBusy = false; $('hintBtn').textContent = 'Hint'; }
+  // Keep following one plan. Asking the solver afresh after every move can send you in circles,
+  // because each fresh answer may start somewhere else, even by undoing the last move.
+  // Matching on the cube itself also covers doing a half turn as two quarter turns.
+  let k = game.plan ? game.plan.keys.indexOf(key) : -1;
+  if (k < 0) {
+    hintBusy = true; $('hintBtn').textContent = solver.ready ? 'Thinking\u2026' : 'Warming up\u2026';
+    try {
+      const faceOf = []; for (let f = 0; f < 6; f++) faceOf[game.st[f * 9 + 4]] = FACE[f];
+      const raw = await solver.solve(Array.from(game.st, v => faceOf[v]).join(''));
+      if (!game || packState(game.st) !== key) return; // they moved meanwhile
+      const moves = raw.trim().split(/\s+/).filter(Boolean), keys = [key];
+      let s = game.st; for (const m of moves) { s = applyMove(s, m); keys.push(packState(s)); }
+      game.plan = { moves, keys }; k = 0;
+    } catch (e) { toast('Couldn\u2019t get a hint. Try again.'); return; }
+    finally { hintBusy = false; $('hintBtn').textContent = 'Hint'; }
+  }
+  const m = game.plan.moves[k];
+  if (!m) return;
+  const { f, q } = parseMove(m);
+  game.hint = m; showArrow(m); cube.setView(...VIEWS[f], true); gameStatus();
+  toast(`Turn the ${FACE_NAMES[f].toLowerCase()} layer ${DIR_TEXT[q]}`);
 }
 $('gameBtn').onclick = startGame;
 $('newGame').onclick = startGame;
