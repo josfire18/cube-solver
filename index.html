@@ -9,180 +9,93 @@
 <title>Cube Solver</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@700&display=swap">
 <style>
-/* Layout: one thumb-driven column on phones (face editor, actions, 3D preview), two columns on wide screens; palette pinned to the bottom edge. */
+/* Layout: one screen. The cube fills the middle; a status line and the controls sit under it. */
 :root {
-  --bg: #e9ecf1;
+  --bg: #eceef2;
   --surface: #ffffff;
-  --ink: #141820;
-  --muted: #5b6372;
-  --line: #d3d8e1;
+  --ink: #15181f;
+  --muted: #646b78;
+  --line: #d4d8df;
   --accent: #0d7a6f;
   --accent-ink: #ffffff;
-  --accent-soft: #d6efeb;
   --bad: #c42b2b;
-  --bad-soft: #fbe3e3;
-  --ok: #17803d;
-  --ok-soft: #dcf2e2;
   --plastic: #15171b;
-  --empty: #3a3f49;
+  --empty: #4a505b;
   --c0: #f5f6f8; --c1: #d8312f; --c2: #14a556; --c3: #f7d532; --c4: #ff7b1c; --c5: #2160d8;
-  --font-display: "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
   --font-body: "Figtree", -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --radius: 16px;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0f1216; --surface: #181c22; --ink: #e9ecf1; --muted: #9aa2b0; --line: #2a3039;
-    --accent: #35c2b0; --accent-ink: #06201c; --accent-soft: #123430;
-    --bad: #ff6b6b; --bad-soft: #3a1717; --ok: #4fd17a; --ok-soft: #12301d;
-    --plastic: #07080a; --empty: #353a43;
+    --bg: #0f1216; --surface: #1a1e25; --ink: #e9ecf1; --muted: #98a0ad; --line: #2b313b;
+    --accent: #35c2b0; --accent-ink: #06201c; --bad: #ff6b6b; --plastic: #050608; --empty: #3c424c;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0f1216; --surface: #181c22; --ink: #e9ecf1; --muted: #9aa2b0; --line: #2a3039;
-  --accent: #35c2b0; --accent-ink: #06201c; --accent-soft: #123430;
-  --bad: #ff6b6b; --bad-soft: #3a1717; --ok: #4fd17a; --ok-soft: #12301d;
-  --plastic: #07080a; --empty: #353a43;
+  --bg: #0f1216; --surface: #1a1e25; --ink: #e9ecf1; --muted: #98a0ad; --line: #2b313b;
+  --accent: #35c2b0; --accent-ink: #06201c; --bad: #ff6b6b; --plastic: #050608; --empty: #3c424c;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+html, body { height: 100%; }
 body {
-  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45;
-  -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.4;
+  overflow: hidden; -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 }
-button { font: inherit; color: inherit; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+button { font: inherit; color: inherit; touch-action: manipulation; -webkit-user-select: none; user-select: none; cursor: pointer; }
 button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-.app { max-width: 1060px; margin: 0 auto; padding-inline: 16px; padding-block: 18px 128px; display: grid; gap: 16px; }
-header { display: grid; gap: 6px; }
-h1 { font-family: var(--font-display); font-weight: 700; font-size: 30px; letter-spacing: -0.02em; margin: 0; line-height: 1.05; text-wrap: balance; }
-.lede { margin: 0; color: var(--muted); max-width: 60ch; }
-.status {
-  display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 12px;
-  background: var(--surface); border: 1px solid var(--line); font-size: 14px; min-height: 44px;
-}
-.status .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex: none; margin-top: 5px; }
-.status[data-kind="ok"] { background: var(--ok-soft); border-color: transparent; }
-.status[data-kind="ok"] .dot { background: var(--ok); }
-.status[data-kind="bad"] { background: var(--bad-soft); border-color: transparent; }
-.status[data-kind="bad"] .dot { background: var(--bad); }
-.status b { font-weight: 700; }
-.status .num { font-variant-numeric: tabular-nums; font-weight: 600; }
+button:disabled { opacity: .35; cursor: default; }
+.app { height: 100%; max-width: 560px; margin: 0 auto; padding-inline: 16px; padding-block: 8px 14px; display: flex; flex-direction: column; gap: 12px; }
 
-.cols { display: grid; gap: 16px; align-items: start; }
-@media (min-width: 880px) { .cols { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); } }
-.card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--line); padding: 16px; display: grid; gap: 14px; min-width: 0; }
-.card h2 { font-family: var(--font-display); font-size: 18px; margin: 0; letter-spacing: -0.01em; }
-.eyebrow { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-
-/* face picker + instructions */
-.pick { display: flex; gap: 14px; align-items: center; }
-.net { display: grid; grid-template-columns: repeat(4, auto); grid-template-rows: repeat(3, auto); gap: 3px; flex: none; }
-.netface { display: grid; grid-template-columns: repeat(3, 10px); grid-auto-rows: 10px; gap: 1px; padding: 2px; background: var(--plastic); border-radius: 4px; border: none; cursor: pointer; outline: 2px solid transparent; outline-offset: 1px; }
-.netface.sel { outline-color: var(--accent); }
-.netface span { border-radius: 2px; background: var(--empty); }
-.hold { min-width: 0; display: grid; gap: 4px; }
-.hold .facename { font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 1.1; }
-.hold p { margin: 0; color: var(--muted); font-size: 14px; }
-.chipc { display: inline-block; width: 0.8em; height: 0.8em; border-radius: 3px; vertical-align: -0.05em; margin-right: 3px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
-
-/* big face */
-.stage { position: relative; width: min(100%, 340px); aspect-ratio: 1; margin: 0 auto; padding: 16px; max-width: 100%; }
-.nb { position: absolute; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
-.nb.t { top: 2px; left: 22%; right: 22%; height: 8px; }
-.nb.b { bottom: 2px; left: 22%; right: 22%; height: 8px; }
-.nb.l { left: 2px; top: 22%; bottom: 22%; width: 8px; }
-.nb.r { right: 2px; top: 22%; bottom: 22%; width: 8px; }
-.bigface { width: 100%; height: 100%; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 6px; padding: 6px; background: var(--plastic); border-radius: 16px; touch-action: none; }
-.st { position: relative; border: none; border-radius: 11px; background: var(--c, var(--empty)); padding: 0; cursor: pointer; display: grid; place-items: center; }
-.st.center { cursor: default; }
-.st.center::after { content: ""; width: 26%; height: 26%; border-radius: 50%; background: rgba(0,0,0,.14); }
-.st.bad { box-shadow: 0 0 0 3px var(--bad), inset 0 0 0 3px var(--plastic); }
-.st .dots { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; width: 70%; pointer-events: none; }
-.st .dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--d); box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
-.st.forced { background: var(--empty); }
-.st.forced::before { content: ""; position: absolute; inset: 7px; border-radius: 7px; border: 3px dashed var(--d); opacity: .9; pointer-events: none; }
-.st.forced .dots i { width: 18px; height: 18px; }
-
-.facenav { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
-.facenav .mid { text-align: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.iconbtn { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; cursor: pointer; flex: none; }
-.iconbtn:disabled { opacity: .4; cursor: default; }
-.iconbtn svg { width: 22px; height: 22px; }
-
-.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.btn { min-height: 52px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); font-weight: 650; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0 14px; }
-.btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-.btn.fill { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-.btn.fill:disabled { background: var(--surface); color: var(--muted); border-color: var(--line); cursor: default; }
-.btn .badge { font-family: var(--font-mono); font-size: 13px; padding: 2px 7px; border-radius: 99px; background: rgba(255,255,255,.22); font-variant-numeric: tabular-nums; }
-.btn.fill:disabled .badge { display: none; }
-.minor { display: flex; flex-wrap: wrap; gap: 8px; }
-.pill { min-height: 40px; padding: 0 14px; border-radius: 99px; border: 1px solid var(--line); background: transparent; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--muted); }
-.pill[aria-pressed="true"] { background: var(--accent-soft); color: var(--ink); border-color: transparent; }
-.pill.warn { color: var(--bad); border-color: var(--bad); }
-
-/* 3D cube */
-.scene { height: 250px; perspective: 900px; display: grid; place-items: center; touch-action: none; cursor: grab; position: relative; border-radius: 12px; background: radial-gradient(closest-side, var(--bg), transparent); }
-.cube3 { --s: 54px; position: relative; width: 0; height: 0; transform-style: preserve-3d; }
+/* cube */
+.scene { flex: 1; min-height: 0; position: relative; perspective: 1000px; display: grid; place-items: center; touch-action: none; }
+.cube3 { --s: min(19vw, 12vh, 96px); position: relative; width: 0; height: 0; transform-style: preserve-3d; }
 .cubie { position: absolute; width: var(--s); height: var(--s); left: calc(var(--s) / -2); top: calc(var(--s) / -2); transform-style: preserve-3d; }
 .cf { position: absolute; inset: 0; background: var(--plastic); backface-visibility: hidden; }
-.cf::after { content: ""; position: absolute; inset: 3px; border-radius: 6px; background: var(--c, transparent); }
+.cf::after { content: ""; position: absolute; inset: 4%; border-radius: 12%; background: var(--c, transparent); }
+.cf.forced::before { content: ""; position: absolute; inset: 36%; border-radius: 50%; background: var(--d); z-index: 1; box-shadow: 0 0 0 2px rgba(0,0,0,.3); }
+.cf.bad::after { box-shadow: inset 0 0 0 calc(var(--s) * .08) var(--bad); }
 .cf.px { transform: rotateY(90deg) translateZ(calc(var(--s) / 2)); }
 .cf.nx { transform: rotateY(-90deg) translateZ(calc(var(--s) / 2)); }
 .cf.py { transform: rotateX(90deg) translateZ(calc(var(--s) / 2)); }
 .cf.ny { transform: rotateX(-90deg) translateZ(calc(var(--s) / 2)); }
 .cf.pz { transform: translateZ(calc(var(--s) / 2)); }
 .cf.nz { transform: rotateY(180deg) translateZ(calc(var(--s) / 2)); }
-.scenebar { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
-@media (max-width: 380px) { .cube3 { --s: 46px; } .scene { height: 220px; } }
+.arrow { position: absolute; width: calc(var(--s) * 3); height: calc(var(--s) * 3); left: calc(var(--s) * -1.5); top: calc(var(--s) * -1.5); pointer-events: none; backface-visibility: hidden; opacity: 0; transition: opacity .25s; }
+.arrow.on { opacity: .95; }
+.arrow svg { width: 100%; height: 100%; display: block; }
+.close { position: absolute; top: 0; right: 0; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; }
+.close svg { width: 20px; height: 20px; }
 
-/* solution */
-.now { display: grid; gap: 2px; text-align: center; padding: 6px 0; }
-.now .mv { font-family: var(--font-mono); font-weight: 700; font-size: 44px; line-height: 1; letter-spacing: -0.02em; }
-.now .what { color: var(--muted); font-size: 14px; }
-.solhead { display: flex; align-items: baseline; gap: 10px; }
-.solhead .count { font-family: var(--font-display); font-weight: 700; font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
-.solhead span:last-child { color: var(--muted); font-weight: 600; }
+.status { text-align: center; color: var(--muted); font-size: 14px; min-height: 2.8em; display: grid; place-items: center; font-variant-numeric: tabular-nums; text-wrap: balance; }
+.status.bad { color: var(--bad); }
+.status b { color: var(--ink); font-weight: 600; }
 
-/* step-by-step overlay */
-.steps { position: fixed; inset: 0; z-index: 30; background: var(--bg); box-shadow: 0 0 0 100vmax var(--bg); display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto auto; gap: 12px; padding: calc(12px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px)); max-width: 640px; margin: 0 auto; }
-.steps[hidden] { display: none !important; }
-.stepstop { display: flex; justify-content: space-between; align-items: center; }
-.stepstop .num { font-family: var(--font-display); font-weight: 700; font-size: 22px; font-variant-numeric: tabular-nums; }
-.progress { height: 6px; border-radius: 99px; background: var(--line); overflow: hidden; }
-.progress span { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .3s; }
-.steps .scene { height: auto; min-height: 220px; }
-.steps .cube3 { --s: clamp(46px, min(15vw, 9vh), 96px); }
-.steps .now .mv { font-size: 56px; }
-.steps .now .what { font-size: 16px; color: var(--ink); max-width: 34ch; margin: 0 auto; text-wrap: balance; }
-.stepctrl { display: grid; grid-template-columns: 1fr 1fr 1.35fr; gap: 10px; }
-.stepctrl .btn { min-height: 62px; font-size: 17px; }
-.stepctrl .btn:disabled { opacity: .4; cursor: default; }
-.moves { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.moves button { font-family: var(--font-mono); font-weight: 700; font-size: 15px; min-width: 46px; height: 40px; padding: 0 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; }
-.moves button.done { color: var(--muted); background: transparent; border-style: dashed; }
-.moves button.cur { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-.note { font-size: 13px; color: var(--muted); margin: 0; }
-.note b { color: var(--ink); }
-
-/* palette bar */
-.bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); background: color-mix(in srgb, var(--surface) 88%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-top: 1px solid var(--line); }
-.palette { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-.sw { position: relative; height: 54px; border-radius: 14px; border: none; background: var(--plastic); padding: 5px; cursor: pointer; display: grid; transition: transform .12s; }
-.sw .chip { border-radius: 10px; background: var(--c); display: grid; place-items: center; font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: rgba(0,0,0,.6); }
-.sw[data-c="5"] .chip, .sw[data-c="1"] .chip { color: rgba(255,255,255,.85); }
-.sw.full .chip { opacity: .45; }
-.sw.over .chip { color: #fff; background: repeating-linear-gradient(45deg, var(--c) 0 6px, #b11 6px 10px); }
-.sw[aria-pressed="true"] { transform: translateY(-4px); box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--ink); }
-.sw.erase { background: var(--surface); border: 1px dashed var(--muted); }
-.sw.erase .chip { background: transparent; color: var(--muted); }
+/* controls */
+.controls { display: grid; gap: 10px; }
+.palette { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+.sw { height: 50px; border-radius: 14px; border: none; background: var(--c); padding: 0; transition: transform .12s; box-shadow: inset 0 0 0 1px rgba(0,0,0,.18); }
+.sw.full { opacity: .35; }
+.sw[aria-pressed="true"] { transform: translateY(-3px); box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--ink); }
+.sw.erase { background: transparent; border: 1.5px dashed var(--muted); color: var(--muted); display: grid; place-items: center; }
 .sw.erase svg { width: 22px; height: 22px; }
+.row { display: grid; grid-template-columns: 50px 1fr 1fr 50px; gap: 8px; }
+.btn { height: 52px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); font-weight: 650; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 10px; }
+.btn svg { width: 22px; height: 22px; }
+.btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.btn.fill { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.fill:disabled { background: var(--surface); color: var(--muted); border-color: var(--line); opacity: 1; }
+.btn.warn { color: var(--bad); border-color: var(--bad); }
 
-.toast { position: fixed; left: 50%; bottom: calc(92px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 99px; font-weight: 600; font-size: 14px; z-index: 20; pointer-events: none; opacity: 0; transition: opacity .2s; max-width: calc(100% - 32px); text-align: center; }
+.move { text-align: center; display: grid; gap: 2px; }
+.move .mv { font-family: var(--font-mono); font-weight: 700; font-size: 44px; line-height: 1.05; }
+.move .what { color: var(--muted); font-size: 14px; min-height: 2.8em; text-wrap: balance; }
+.steprow { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 8px; }
+
+.toast { position: fixed; left: 50%; top: calc(16px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 99px; font-weight: 600; font-size: 14px; z-index: 20; pointer-events: none; opacity: 0; transition: opacity .2s; max-width: calc(100% - 32px); text-align: center; }
 .toast.show { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .sw, .toast { transition: none; } }
 </style>
@@ -190,82 +103,31 @@ h1 { font-family: var(--font-display); font-weight: 700; font-size: 30px; letter
 <body>
 
 <div class="app">
-  <header>
-    <h1>Cube Solver</h1>
-    <p class="lede">Hold your 3×3 with <b>white on top</b> and <b>green facing you</b>. Tap stickers to match it. Auto-fill places every sticker that only has one possible color left.</p>
-  </header>
+  <div class="scene" id="scene">
+    <div class="cube3" id="cube3"></div>
+    <button class="close" id="closeSteps" aria-label="Back to editing" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="status" id="status" role="status" aria-live="polite"></div>
 
-  <div class="status" id="status" data-kind="info" role="status" aria-live="polite"><span class="dot"></span><span id="statusText">Loading…</span></div>
+  <div class="controls" id="editUI">
+    <div class="palette" id="palette"></div>
+    <div class="row">
+      <button class="btn" id="undo" aria-label="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg></button>
+      <button class="btn fill" id="autofill">Auto-fill</button>
+      <button class="btn primary" id="solveBtn">Solve</button>
+      <button class="btn" id="clearBtn" aria-label="Clear all stickers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
+    </div>
+  </div>
 
-  <div class="cols">
-    <section class="card" aria-label="Enter your cube">
-      <div class="pick">
-        <div class="net" id="net"></div>
-        <div class="hold">
-          <span class="eyebrow">Editing</span>
-          <span class="facename" id="faceName">Front</span>
-          <p id="holdText"></p>
-        </div>
-      </div>
-
-      <div class="stage">
-        <div class="nb t" id="nbT"></div><div class="nb r" id="nbR"></div><div class="nb b" id="nbB"></div><div class="nb l" id="nbL"></div>
-        <div class="bigface" id="bigface"></div>
-      </div>
-
-      <div class="facenav">
-        <button class="iconbtn" id="prevFace" aria-label="Previous face"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
-        <button class="iconbtn" id="undo" aria-label="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg></button>
-        <div class="mid" id="faceCount">0 of 8 set</div>
-        <button class="iconbtn" id="hintsBtn" aria-label="Show possible colors" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="7" cy="8" r="2.2" fill="currentColor"/><circle cx="17" cy="8" r="2.2"/><circle cx="12" cy="16" r="2.2" fill="currentColor"/></svg></button>
-        <button class="iconbtn" id="nextFace" aria-label="Next face"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
-      </div>
-
-      <div class="actions">
-        <button class="btn fill" id="autofill">Auto-fill <span class="badge" id="fillBadge">0</span></button>
-        <button class="btn primary" id="solveBtn">Solve</button>
-      </div>
-      <div class="minor">
-        <button class="pill" id="exampleBtn">Load example</button>
-        <button class="pill" id="clearBtn">Clear all</button>
-      </div>
-      <p class="note">Dots on an empty sticker are the colors that still fit there. A dashed ring means only one color fits, so Auto-fill will place it.</p>
-    </section>
-
-    <section class="card" aria-label="Cube preview and solution">
-      <div class="scenebar"><h2 id="rightTitle">Preview</h2><button class="pill" id="flipBtn">Show back</button></div>
-      <div class="scene" id="scene"><div class="cube3" id="cube3"></div></div>
-      <p class="note" id="sceneNote">Drag to turn the cube around. Grey stickers are not entered yet.</p>
-
-      <div id="solPanel" hidden>
-        <div style="display:grid;gap:14px">
-          <div class="solhead"><span class="count" id="solCount">0</span><span>moves to solve</span></div>
-          <button class="btn fill" id="startSteps">Show steps</button>
-          <ol class="moves" id="moves"></ol>
-          <p class="note">Tap any move to jump to it. <b>2</b> means a half turn, <b>'</b> means counter-clockwise.</p>
-        </div>
-      </div>
-      <p class="note" id="solverNote">Solver: loading…</p>
-    </section>
+  <div class="controls" id="stepUI" hidden>
+    <div class="move"><span class="mv" id="mvNow">Ready</span><span class="what" id="mvWhat"></span></div>
+    <div class="steprow">
+      <button class="btn" id="prevStep">Previous</button>
+      <button class="btn" id="replayStep">Replay</button>
+      <button class="btn primary" id="nextStep">Next</button>
+    </div>
   </div>
 </div>
-
-<div class="steps" id="steps" hidden role="dialog" aria-modal="true" aria-label="Step-by-step solution">
-  <div class="stepstop">
-    <div><span class="eyebrow">Step</span><div class="num" id="stepNum">0 of 0</div></div>
-    <button class="iconbtn" id="closeSteps" aria-label="Close steps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-  </div>
-  <div class="progress"><span id="progBar"></span></div>
-  <div class="scene" id="scene2"><div class="cube3" id="cube3b"></div></div>
-  <div class="now"><span class="mv" id="mvNow">Ready</span><span class="what" id="mvWhat"></span></div>
-  <div class="stepctrl">
-    <button class="btn" id="prevStep">Previous</button>
-    <button class="btn" id="replayStep">Replay</button>
-    <button class="btn primary" id="nextStep">Next</button>
-  </div>
-</div>
-
-<div class="bar"><div class="palette" id="palette"></div></div>
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/cubejs@1.3.2/lib/cube.js"></script>
@@ -420,8 +282,8 @@ function fmtBig(n) {
   return `${s[0]}.${s[1]}&thinsp;×&thinsp;10<sup>${s.length - 1}</sup>`;
 }
 
-// ---------- 3D cube ----------
-function makeCube3D(scene, root) {
+// ---------- 3D cube (drag to turn, tap a sticker to paint it) ----------
+function makeCube3D(scene, root, onTap) {
   const cubies = [];
   const dirs = [['px',[1,0,0]],['nx',[-1,0,0]],['py',[0,1,0]],['ny',[0,-1,0]],['pz',[0,0,1]],['nz',[0,0,-1]]];
   for (let x = -1; x <= 1; x++) for (let y = -1; y <= 1; y++) for (let z = -1; z <= 1; z++) {
@@ -430,34 +292,51 @@ function makeCube3D(scene, root) {
     const p = [x, y, z], faces = [];
     for (const [cls, d] of dirs) {
       const f = document.createElement('div'); f.className = 'cf ' + cls;
-      if (p[0]*d[0] + p[1]*d[1] + p[2]*d[2] === 1) faces.push({ el: f, i: IDX.get([2*x + d[0], 2*y + d[1], 2*z + d[2]].join()) });
+      if (p[0]*d[0] + p[1]*d[1] + p[2]*d[2] === 1) {
+        const i = IDX.get([2*x + d[0], 2*y + d[1], 2*z + d[2]].join());
+        f.dataset.i = i; faces.push({ el: f, i, cls: 'cf ' + cls });
+      }
       el.appendChild(f);
     }
     const base = `translate3d(calc(var(--s) * ${x}), calc(var(--s) * ${-y}), calc(var(--s) * ${z}))`;
     el.style.transform = base; root.appendChild(el);
     cubies.push({ el, p, faces, base });
   }
-  let rx = -26, ry = -36, busy = null;
+  let rx = -26, ry = -36, busy = null, drag = null;
   const view = () => { root.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`; };
   view();
-  let drag = null;
-  scene.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, rx, ry }; scene.setPointerCapture(e.pointerId); });
+  scene.addEventListener('pointerdown', e => {
+    if (e.target.closest('button')) return;
+    const f = e.target.closest && e.target.closest('.cf[data-i]');
+    drag = { x: e.clientX, y: e.clientY, rx, ry, moved: false, i: f ? +f.dataset.i : null };
+    scene.setPointerCapture(e.pointerId);
+  });
   scene.addEventListener('pointermove', e => {
     if (!drag) return;
-    ry = drag.ry + (e.clientX - drag.x) * 0.55;
-    rx = Math.max(-85, Math.min(85, drag.rx - (e.clientY - drag.y) * 0.55));
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) < 8) return;
+    drag.moved = true;
+    ry = drag.ry + dx * 0.5;
+    rx = Math.max(-88, Math.min(88, drag.rx - dy * 0.5));
     view();
   });
-  const end = () => { drag = null; };
-  scene.addEventListener('pointerup', end); scene.addEventListener('pointercancel', end);
+  scene.addEventListener('pointerup', () => { if (drag && !drag.moved && drag.i != null && onTap) onTap(drag.i); drag = null; });
+  scene.addEventListener('pointercancel', () => { drag = null; });
   return {
-    set(st) {
+    set(st, deco) {
       for (const c of cubies) for (const f of c.faces) {
-        const v = st[f.i]; f.el.style.setProperty('--c', v >= 0 ? `var(--c${v})` : 'var(--empty)');
+        const v = st[f.i]; let cls = f.cls;
+        f.el.style.setProperty('--c', v >= 0 ? `var(--c${v})` : 'var(--empty)');
+        if (deco) {
+          if (deco.bad.has(f.i)) cls += ' bad';
+          const p = deco.poss[f.i];
+          if (v < 0 && p && !(p & (p - 1))) { cls += ' forced'; f.el.style.setProperty('--d', `var(--c${Math.log2(p)})`); }
+        }
+        if (f.el.className !== cls) f.el.className = cls;
       }
     },
     setView(x, y, animate) {
-      let d = ((y - ry) % 360 + 540) % 360 - 180; // shortest way round
+      const d = ((y - ry) % 360 + 540) % 360 - 180; // shortest way round
       const changed = Math.abs(x - rx) > 1 || Math.abs(d) > 1;
       rx = x; ry += d;
       root.style.transition = animate && changed ? 'transform .38s ease' : '';
@@ -465,7 +344,6 @@ function makeCube3D(scene, root) {
       if (animate && changed) setTimeout(() => { root.style.transition = ''; }, 400);
       return changed;
     },
-    flip() { ry += 180; root.style.transition = 'transform .5s ease'; view(); setTimeout(() => { root.style.transition = ''; }, 520); },
     turn(move, ms, done) {
       if (busy) { clearTimeout(busy.t); busy.finish(); }
       const { f, q } = parseMove(move); const n = FD[f][0];
@@ -524,166 +402,100 @@ onmessage = e => { try { postMessage({ type: 'sol', id: e.data.id, sol: Cube.fro
   };
 })();
 
-// ---------- app state ----------
+// ---------- app ----------
 const $ = id => document.getElementById(id);
-let st = emptyState(), cur = 2, brush = 0, hints = true, history = [], A = null;
-let sol = null; // { key, moves, states } or { key, error }
+let st = emptyState(), brush = 0, history = [], A = null, sol = null, solving = null, wantOpen = false;
 try {
   const saved = JSON.parse(localStorage.getItem('cube-solver-v1') || 'null');
   if (saved && Array.isArray(saved.st) && saved.st.length === 54) { st = Int8Array.from(saved.st); for (let f = 0; f < 6; f++) st[f * 9 + 4] = f; }
-  if (saved && typeof saved.hints === 'boolean') hints = saved.hints;
 } catch (e) {}
-const save = () => { try { localStorage.setItem('cube-solver-v1', JSON.stringify({ st: Array.from(st), hints })); } catch (e) {} };
+const save = () => { try { localStorage.setItem('cube-solver-v1', JSON.stringify({ st: Array.from(st) })); } catch (e) {} };
 
-// build palette
+let toastT;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2000); }
+
+// palette
 const pal = $('palette');
 for (let c = 0; c < 6; c++) {
   const b = document.createElement('button');
   b.className = 'sw'; b.dataset.c = c; b.style.setProperty('--c', `var(--c${c})`);
-  b.setAttribute('aria-label', COLOR_NAMES[c]);
-  b.innerHTML = '<span class="chip"></span>';
   b.onclick = () => { brush = c; renderPalette(); };
   pal.appendChild(b);
 }
 const er = document.createElement('button');
 er.className = 'sw erase'; er.dataset.c = -1; er.setAttribute('aria-label', 'Eraser');
-er.innerHTML = '<span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H9l-5-5a2 2 0 010-2.8l8.2-8.2a2 2 0 012.8 0l5 5a2 2 0 010 2.8L13 19"/><path d="M8 9l7 7"/></svg></span>';
+er.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H9l-5-5a2 2 0 010-2.8l8.2-8.2a2 2 0 012.8 0l5 5a2 2 0 010 2.8L13 19"/><path d="M8 9l7 7"/></svg>';
 er.onclick = () => { brush = -1; renderPalette(); };
 pal.appendChild(er);
-
-// build net
-const net = $('net'), netCells = [];
-const NET_POS = [[1,0],[2,1],[1,1],[1,2],[0,1],[3,1]];
-for (let f = 0; f < 6; f++) {
-  const b = document.createElement('button');
-  b.className = 'netface'; b.style.gridColumn = NET_POS[f][0] + 1; b.style.gridRow = NET_POS[f][1] + 1;
-  b.setAttribute('aria-label', `Edit ${FACE_NAMES[f].toLowerCase()} face`);
-  for (let i = 0; i < 9; i++) { const s = document.createElement('span'); b.appendChild(s); netCells[f * 9 + i] = s; }
-  b.onclick = () => { cur = f; render(); };
-  net.appendChild(b);
-}
-
-// build big face
-const big = $('bigface'), bigCells = [];
-for (let i = 0; i < 9; i++) { const b = document.createElement('button'); b.className = 'st'; b.dataset.k = i; big.appendChild(b); bigCells.push(b); }
-
-const cube3 = makeCube3D($('scene'), $('cube3'));
-
-// ---------- rendering ----------
-function setStatus(kind, html) { $('status').dataset.kind = kind; $('statusText').innerHTML = html; }
-const chip = c => `<span class="chipc" style="background:var(--c${c})"></span>${COLOR_NAMES[c]}`;
-function forcedList() {
-  const out = [];
-  for (let i = 0; i < 54; i++) if (st[i] < 0 && A.poss[i] && !(A.poss[i] & (A.poss[i] - 1))) out.push(i);
-  return out;
-}
 function renderPalette() {
   const counts = [0,0,0,0,0,0]; st.forEach(v => { if (v >= 0) counts[v]++; });
   pal.querySelectorAll('.sw').forEach(b => {
     const c = +b.dataset.c;
     b.setAttribute('aria-pressed', String(c === brush));
-    if (c >= 0) {
-      const left = 9 - counts[c];
-      b.querySelector('.chip').textContent = left;
-      b.classList.toggle('full', left === 0); b.classList.toggle('over', left < 0);
-      b.setAttribute('aria-label', `${COLOR_NAMES[c]}, ${left} left`);
-    }
+    if (c >= 0) { b.classList.toggle('full', counts[c] >= 9); b.setAttribute('aria-label', `${COLOR_NAMES[c]}, ${9 - counts[c]} left`); }
   });
 }
+
+// cube
+let stepping = false;
+const cube = makeCube3D($('scene'), $('cube3'), i => {
+  if (stepping) return;
+  if (i % 9 === 4) { toast('Center colors are fixed'); return; }
+  const v = brush < 0 || st[i] === brush ? -1 : brush;
+  history.push(Int8Array.from(st)); if (history.length > 300) history.shift();
+  st[i] = v; render();
+});
+
+// direction arrow drawn on the face being turned
+const arrow = document.createElement('div');
+arrow.className = 'arrow';
+$('cube3').appendChild(arrow);
+const FACE_ROT = ['rotateX(90deg)', 'rotateY(90deg)', '', 'rotateX(-90deg)', 'rotateY(-90deg)', 'rotateY(180deg)'];
+function showArrow(move) {
+  if (!move) { arrow.classList.remove('on'); return; }
+  const { f, q } = parseMove(move);
+  arrow.style.transform = `${FACE_ROT[f]} translateZ(calc(var(--s) * 1.5 + 3px))`;
+  const path = '<path d="M24 65 A30 30 0 1 1 65 76" fill="none" stroke-linecap="round"/>';
+  const head = '<path d="M56 82 L69 82 L61 69 Z" stroke-linejoin="round"/>';
+  const g = `<g stroke="#000" stroke-width="10" fill="#000">${path}${head}</g><g stroke="#fff" stroke-width="5" fill="#fff">${path}${head}</g>`;
+  arrow.innerHTML = `<svg viewBox="0 0 100 100"><g ${q === 3 ? 'transform="translate(100 0) scale(-1 1)"' : ''}>${g}</g>` +
+    (q === 2 ? '<text x="50" y="58" text-anchor="middle" font-size="24" font-weight="800" fill="#fff" stroke="#000" stroke-width="4" paint-order="stroke" font-family="system-ui, sans-serif">×2</text>' : '') + '</svg>';
+  arrow.classList.add('on');
+}
+
+// ---------- editing ----------
+function forcedList() {
+  const out = [];
+  for (let i = 0; i < 54; i++) if (st[i] < 0 && A.poss[i] && !(A.poss[i] & (A.poss[i] - 1))) out.push(i);
+  return out;
+}
+function setStatus(html, bad) { const s = $('status'); s.innerHTML = `<span>${html}</span>`; s.classList.toggle('bad', !!bad); }
 function render() {
   A = analyze(st);
-  const badSet = new Set(); A.bad.forEach(b => b.fs.forEach(i => badSet.add(i)));
-  const forced = A.total > 0n ? forcedList() : [];
-  const filled = st.reduce((n, v) => n + (v >= 0 ? 1 : 0), 0) - 6;
+  const bad = new Set(); A.bad.forEach(b => b.fs.forEach(i => bad.add(i)));
+  const forced = A.total > 0n ? forcedList().length : 0;
+  const filled = st.reduce((n, v) => n + (v >= 0 ? 1 : 0), 0) - 6, left = 48 - filled;
+  if (!stepping) cube.set(st, { poss: A.total > 0n ? A.poss : new Uint8Array(54), bad });
 
-  // net
-  for (let i = 0; i < 54; i++) netCells[i].style.background = st[i] >= 0 ? `var(--c${st[i]})` : '';
-  net.querySelectorAll('.netface').forEach((b, f) => b.classList.toggle('sel', f === cur));
-
-  // big face
-  const nb = NB[cur];
-  [['nbT',0],['nbR',1],['nbB',2],['nbL',3]].forEach(([id, k]) => { $(id).style.background = `var(--c${nb[k]})`; });
-  $('faceName').textContent = `${FACE_NAMES[cur]} · ${COLOR_NAMES[cur]} center`;
-  $('holdText').innerHTML = `Turn the cube so ${chip(cur)} faces you with ${chip(nb[0])} on top.`;
-  let setCount = 0;
-  bigCells.forEach((b, k) => {
-    const i = cur * 9 + k, v = st[i];
-    b.className = 'st' + (k === 4 ? ' center' : '') + (badSet.has(i) ? ' bad' : '');
-    b.style.setProperty('--c', v >= 0 ? `var(--c${v})` : 'var(--empty)');
-    b.innerHTML = '';
-    if (k !== 4 && v >= 0) setCount++;
-    let label = k === 4 ? `${COLOR_NAMES[v]} center, fixed` : v >= 0 ? COLOR_NAMES[v] : 'empty';
-    if (v < 0 && hints && A.total > 0n) {
-      const p = A.poss[i], dots = document.createElement('span'); dots.className = 'dots';
-      const isForced = p && !(p & (p - 1));
-      for (let c = 0; c < 6; c++) if (p >> c & 1) { const d = document.createElement('i'); d.style.setProperty('--d', `var(--c${c})`); dots.appendChild(d); }
-      if (isForced) { b.classList.add('forced'); b.style.setProperty('--d', `var(--c${Math.log2(p)})`); label += `, must be ${COLOR_NAMES[Math.log2(p)]}`; }
-      b.appendChild(dots);
-    }
-    b.setAttribute('aria-label', label);
-  });
-  $('faceCount').textContent = `${setCount} of 8 set`;
-  $('hintsBtn').setAttribute('aria-pressed', String(hints));
+  $('autofill').textContent = forced ? `Auto-fill +${forced}` : 'Auto-fill';
+  $('autofill').disabled = !forced;
   $('undo').disabled = !history.length;
 
-  // actions
-  $('fillBadge').textContent = '+' + forced.length;
-  $('autofill').disabled = !forced.length;
-
-  // status
-  const left = 48 - filled;
-  if (A.total === 0n) setStatus('bad', `<b>No real cube matches.</b> ${diagnose(st, A)}`);
-  else if (A.total === 1n) {
-    ensureSolution();
-    const s = currentSol(), rest = left ? ` Only one cube fits, so Auto-fill can place the last <span class="num">${left}</span> sticker${left === 1 ? '' : 's'}.` : '';
-    if (s && s.error) setStatus('bad', `<b>Couldn\u2019t solve.</b> ${s.error}`);
-    else if (s && !s.moves.length) setStatus('ok', '<b>This cube is already solved.</b>');
-    else if (s) setStatus('ok', `<b>Solvable in <span class="num">${s.moves.length}</span> moves.</b> Tap Show steps to go one move at a time.${rest}`);
-    else setStatus('ok', `<b>Working out the moves…</b>${rest}`);
+  if (A.total === 1n) ensureSolution();
+  const s = currentSol();
+  $('solveBtn').textContent = wantOpen ? 'Solving…' : 'Solve';
+  if (!stepping) {
+    if (A.total === 0n) setStatus(diagnose(st, A), true);
+    else if (filled === 0) setStatus('Hold white on top, green in front.<br>Pick a color, tap stickers, drag to turn.');
+    else if (A.total > 1n) setStatus(`<b>${left}</b> left · <b>${fmtBig(A.total)}</b> cubes still fit`);
+    else if (s && s.error) setStatus(s.error, true);
+    else if (s && !s.moves.length) setStatus('This cube is already solved.');
+    else if (s) setStatus(`<b>Solvable in ${s.moves.length} moves.</b>${left ? ` Auto-fill can place the last ${left}.` : ''}`);
+    else setStatus('Only one cube fits. Working out the moves…');
   }
-  else setStatus('info', `<span class="num">${left}</span> stickers to go. <span class="num">${fmtBig(A.total)}</span> different cubes still fit${forced.length ? `, and <span class="num">${forced.length}</span> sticker${forced.length === 1 ? ' is' : 's are'} already certain` : ''}.`);
-
   renderPalette();
-  cube3.set(st);
-  renderSolCard();
   save();
 }
-
-// ---------- painting ----------
-let paint = null;
-function paintAt(k) {
-  if (k === 4) return;
-  const i = cur * 9 + k, v = paint.mode === 'erase' ? -1 : brush;
-  if (st[i] !== v) { st[i] = v; paint.changed = true; render(); }
-}
-big.addEventListener('pointerdown', e => {
-  const el = e.target.closest('.st'); if (!el) return;
-  e.preventDefault();
-  const k = +el.dataset.k; if (k === 4) return;
-  const i = cur * 9 + k;
-  history.push(Int8Array.from(st)); if (history.length > 300) history.shift();
-  paint = { mode: brush < 0 || st[i] === brush ? 'erase' : 'paint', changed: false };
-  big.setPointerCapture(e.pointerId);
-  paintAt(k);
-});
-big.addEventListener('pointermove', e => {
-  if (!paint) return;
-  const el = document.elementFromPoint(e.clientX, e.clientY);
-  const s = el && el.closest && el.closest('.st');
-  if (s && big.contains(s)) paintAt(+s.dataset.k);
-});
-const endPaint = () => { if (paint && !paint.changed) history.pop(); paint = null; render(); };
-big.addEventListener('pointerup', endPaint);
-big.addEventListener('pointercancel', endPaint);
-
-$('prevFace').onclick = () => { cur = ORDER[(ORDER.indexOf(cur) + 5) % 6]; render(); };
-$('nextFace').onclick = () => { cur = ORDER[(ORDER.indexOf(cur) + 1) % 6]; render(); };
-$('hintsBtn').onclick = () => { hints = !hints; render(); };
-$('undo').onclick = () => { if (!history.length) return; st = history.pop(); render(); };
-
-let toastT;
-function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200); }
-
 function autofill() {
   const f = forcedList(); if (!f.length) return 0;
   history.push(Int8Array.from(st));
@@ -692,35 +504,23 @@ function autofill() {
   return f.length;
 }
 $('autofill').onclick = () => { const n = autofill(); if (n) toast(`Filled ${n} sticker${n === 1 ? '' : 's'}`); };
-
+$('undo').onclick = () => { if (history.length) { st = history.pop(); render(); } };
 let clearArm = null;
 $('clearBtn').onclick = () => {
   const b = $('clearBtn');
-  if (!clearArm) { b.textContent = 'Tap again to clear'; b.classList.add('warn'); clearArm = setTimeout(() => { clearArm = null; b.textContent = 'Clear all'; b.classList.remove('warn'); }, 3000); return; }
-  clearTimeout(clearArm); clearArm = null; b.textContent = 'Clear all'; b.classList.remove('warn');
-  history.push(Int8Array.from(st)); st = emptyState(); cur = 2; render(); toast('Cleared');
-};
-
-$('exampleBtn').onclick = () => {
-  history.push(Int8Array.from(st));
-  let s = solvedState();
-  "R U2 F' L D2 B R' U L2 F D' B2 U' R2 F L' D".split(' ').forEach(m => { s = applyMove(s, m); });
-  // leave the whole bottom face blank: the other five faces already decide it
-  for (let i = 27; i < 36; i++) if (i !== 31) s[i] = -1;
-  st = s; cur = 3; render(); toast('Bottom face left blank. Tap Auto-fill.');
+  if (!clearArm) { b.classList.add('warn'); toast('Tap again to clear everything'); clearArm = setTimeout(() => { clearArm = null; b.classList.remove('warn'); }, 3000); return; }
+  clearTimeout(clearArm); clearArm = null; b.classList.remove('warn');
+  history.push(Int8Array.from(st)); st = emptyState(); render(); toast('Cleared');
 };
 
 // ---------- solving ----------
-// As soon as the stickers pin down exactly one cube, the moves are worked out in the background.
-const DIR_TEXT = { 1: 'clockwise', 3: 'counter-clockwise', 2: 'half turn (either direction)' };
+const DIR_TEXT = { 1: 'clockwise', 3: 'counter-clockwise', 2: 'twice (half turn)' };
 const inverse = m => m[1] === "'" ? m[0] : m[1] === '2' ? m : m + "'";
 const isSolved = s => s.every((v, i) => v === ((i / 9) | 0));
 const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-let solving = null, wantOpen = false;
 function completed() { const s = Int8Array.from(st); for (let i = 0; i < 54; i++) if (s[i] < 0) s[i] = Math.log2(A.poss[i]); return s; }
 function currentSol() { return A.total === 1n && sol && sol.key === completed().join(',') ? sol : null; }
 function ensureSolution() {
-  if (A.total !== 1n) { wantOpen = false; return; }
   const full = completed(), key = full.join(',');
   if ((sol && sol.key === key) || solving === key) return;
   sol = null;
@@ -729,92 +529,79 @@ function ensureSolution() {
   solver.solve(Array.from(full, v => FACE[v]).join('')).then(raw => {
     const moves = raw.trim().split(/\s+/).filter(Boolean), states = [full];
     for (const m of moves) states.push(applyMove(states[states.length - 1], m));
-    if (!isSolved(states[states.length - 1])) throw new Error('The computed moves did not solve this cube. Recheck your stickers.');
+    if (!isSolved(states[states.length - 1])) throw new Error('Those moves did not solve this cube. Recheck your stickers.');
     if (solving === key) sol = { key, moves, states };
   }).catch(err => { if (solving === key) sol = { key, error: err.message || String(err) }; })
     .finally(() => {
       if (solving !== key) return;
-      solving = null; render();
-      if (wantOpen) { wantOpen = false; const s = currentSol(); if (s && s.moves && s.moves.length) openSteps(0); }
+      solving = null;
+      const open = wantOpen; wantOpen = false;
+      render();
+      if (open) startSteps();
     });
 }
-function renderSolCard() {
-  const s = currentSol(), ok = !!(s && !s.error && s.moves.length);
-  $('solPanel').hidden = !ok;
-  $('sceneNote').hidden = ok;
-  $('rightTitle').textContent = ok ? 'Solution' : 'Preview';
-  $('solveBtn').textContent = wantOpen ? 'Working…' : ok ? 'Show steps' : 'Solve';
-  if (!ok) return;
-  $('solCount').textContent = s.moves.length;
-  const ol = $('moves'); ol.innerHTML = '';
-  s.moves.forEach((m, k) => {
-    const li = document.createElement('li'), b = document.createElement('button');
-    b.textContent = m; b.setAttribute('aria-label', `Move ${k + 1}: ${m}`);
-    b.onclick = () => { openSteps(k); setTimeout(next, 250); };
-    li.appendChild(b); ol.appendChild(li);
-  });
-}
-function solveClick() {
-  if (A.total === 0n) { toast('Fix the problem shown at the top first'); return; }
+$('solveBtn').onclick = () => {
+  if (A.total === 0n) { toast('Fix the red stickers first'); return; }
   if (A.total > 1n) { toast('Enter more stickers first'); return; }
   const s = currentSol();
-  if (!s) { wantOpen = true; renderSolCard(); return; }
+  if (!s) { wantOpen = true; render(); return; }
   if (s.error) { toast(s.error); return; }
-  if (!s.moves.length) { toast('This cube is already solved'); return; }
-  openSteps(0);
-}
-$('solveBtn').onclick = solveClick;
-$('startSteps').onclick = solveClick;
+  if (!s.moves.length) { toast('Already solved'); return; }
+  startSteps();
+};
 
-// ---------- step-by-step view ----------
-const cubeB = makeCube3D($('scene2'), $('cube3b'));
+// ---------- step-by-step ----------
 const HOME = [-26, -36];
-const VIEWS = [HOME, HOME, HOME, [30, -36], [-26, 36], [-26, -144]]; // turn the camera toward the face being moved
+const VIEWS = [[-34, -36], HOME, HOME, [34, -36], [-26, 36], [-26, -144]]; // camera faces the layer being turned
 let stepSol = null, pos = 0, stepT = null;
-function openSteps(at) {
+function startSteps() {
   const s = currentSol(); if (!s || !s.moves.length) return;
   if (forcedList().length) autofill();
-  stepSol = s; pos = at;
-  clearTimeout(stepT); cubeB.cancel();
-  $('steps').hidden = false; document.documentElement.style.overflow = 'hidden';
-  cubeB.setView(...HOME, false); cubeB.set(s.states[pos]);
+  stepSol = s; pos = 0; stepping = true;
+  $('editUI').hidden = true; $('stepUI').hidden = false; $('closeSteps').hidden = false;
+  cube.cancel(); cube.set(s.states[0]); cube.setView(...HOME, true); showArrow(null);
   renderStep();
 }
-function closeSteps() { clearTimeout(stepT); cubeB.cancel(); $('steps').hidden = true; document.documentElement.style.overflow = ''; }
+function exitSteps() {
+  clearTimeout(stepT); cube.cancel(); showArrow(null);
+  stepping = false; stepSol = null;
+  $('editUI').hidden = false; $('stepUI').hidden = true; $('closeSteps').hidden = true;
+  cube.setView(...HOME, true); render();
+}
 function renderStep() {
   const n = stepSol.moves.length;
-  $('stepNum').textContent = `${pos} of ${n}`;
-  $('progBar').style.width = `${(pos / n) * 100}%`;
+  setStatus(`Step <b>${pos}</b> of ${n}`);
   if (pos === 0) {
     $('mvNow').textContent = 'Ready';
-    $('mvWhat').textContent = 'Hold white on top and green facing you. Tap Next for the first move.';
+    $('mvWhat').textContent = 'White on top, green facing you. Tap Next for the first turn.';
   } else {
     const m = stepSol.moves[pos - 1], { f, q } = parseMove(m);
     $('mvNow').textContent = m;
-    $('mvWhat').textContent = `Turn the ${FACE_NAMES[f].toLowerCase()} face (${COLOR_NAMES[f]} center) ${DIR_TEXT[q]}${q === 2 ? '' : ', as if you were looking straight at it'}.` + (pos === n ? ' That solves the cube!' : '');
+    $('mvWhat').textContent = `Turn the ${FACE_NAMES[f].toLowerCase()} layer (${COLOR_NAMES[f]} center) ${DIR_TEXT[q]}, as the arrow shows.` + (pos === n ? ' Solved!' : '');
   }
-  $('prevStep').disabled = pos === 0;
-  $('replayStep').disabled = pos === 0;
+  $('prevStep').disabled = $('replayStep').disabled = pos === 0;
   $('nextStep').textContent = pos === n ? 'Done' : 'Next';
 }
 function animateStep(move, from, to, face) {
-  clearTimeout(stepT); cubeB.cancel();
+  clearTimeout(stepT); cube.cancel();
   const target = stepSol.states[to];
-  cubeB.set(stepSol.states[from]);
+  cube.set(stepSol.states[from]);
   pos = to; renderStep();
-  if (reduceMotion()) { cubeB.setView(...VIEWS[face], false); cubeB.set(target); return; }
-  const moved = cubeB.setView(...VIEWS[face], true);
-  const ms = parseMove(move).q === 2 ? 760 : 520;
-  stepT = setTimeout(() => cubeB.turn(move, ms, () => {
-    cubeB.set(target);
-    // after going back, face the camera toward the move now on screen
-    const shown = pos ? VIEWS[parseMove(stepSol.moves[pos - 1]).f] : HOME;
-    if (to < from) cubeB.setView(...shown, true);
-  }), moved ? 400 : 60);
+  const settle = () => {
+    cube.set(target);
+    const shown = pos ? stepSol.moves[pos - 1] : null;
+    showArrow(shown);
+    if (to < from) cube.setView(...(shown ? VIEWS[parseMove(shown).f] : HOME), true);
+  };
+  if (reduceMotion()) { cube.setView(...VIEWS[face], false); showArrow(move); settle(); return; }
+  const moved = cube.setView(...VIEWS[face], true);
+  showArrow(move);
+  const ms = parseMove(move).q === 2 ? 1100 : 750;
+  stepT = setTimeout(() => cube.turn(move, ms, settle), moved ? 550 : 300);
 }
 function next() {
   if (!stepSol) return;
-  if (pos >= stepSol.moves.length) { closeSteps(); return; }
+  if (pos >= stepSol.moves.length) { exitSteps(); return; }
   const m = stepSol.moves[pos];
   animateStep(m, pos, pos + 1, parseMove(m).f);
 }
@@ -831,24 +618,17 @@ function replay() {
 $('nextStep').onclick = next;
 $('prevStep').onclick = prev;
 $('replayStep').onclick = replay;
-$('closeSteps').onclick = closeSteps;
+$('closeSteps').onclick = exitSteps;
 document.addEventListener('keydown', e => {
-  if ($('steps').hidden) return;
+  if (!stepping) return;
   if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
   else if (e.key === 'ArrowLeft') prev();
   else if (e.key === 'r' || e.key === 'R') replay();
-  else if (e.key === 'Escape') closeSteps();
+  else if (e.key === 'Escape') exitSteps();
 });
-$('flipBtn').onclick = () => { cube3.flip(); const b = $('flipBtn'); b.textContent = b.textContent === 'Show back' ? 'Show front' : 'Show back'; };
-
-function renderSolver() {
-  $('solverNote').textContent = solver.ready ? 'Solver ready. Solutions are usually 18 to 22 moves.' :
-    solver.background ? 'Solver warming up in the background (a few seconds)…' : 'Solver starts the first time you tap Solve.';
-}
-solver.onChange(renderSolver); renderSolver();
 
 render();
-window.__cube = { analyze, applyMove, solvedState, get st() { return st; } };
+window.__cube = { analyze, applyMove, solvedState, setState(s) { st = Int8Array.from(s); render(); }, get st() { return st; } };
 })();
 </script>
 </body>
