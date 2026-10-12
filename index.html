@@ -95,7 +95,7 @@ button:disabled { opacity: .35; cursor: default; }
 .move { text-align: center; display: grid; gap: 2px; }
 .move .mv { font-family: var(--font-mono); font-weight: 700; font-size: 44px; line-height: 1.05; }
 .move .what { color: var(--muted); font-size: 14px; min-height: 2.8em; text-wrap: balance; }
-.steprow { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 8px; }
+.steprow { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
 
 .toast { position: fixed; left: 50%; top: calc(16px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 99px; font-weight: 600; font-size: 14px; z-index: 20; pointer-events: none; opacity: 0; transition: opacity .2s; max-width: calc(100% - 32px); text-align: center; }
 .toast.show { opacity: 1; }
@@ -125,7 +125,6 @@ button:disabled { opacity: .35; cursor: default; }
     <div class="move"><span class="mv" id="mvNow">Ready</span><span class="what" id="mvWhat"></span></div>
     <div class="steprow">
       <button class="btn" id="prevStep">Previous</button>
-      <button class="btn" id="replayStep">Replay</button>
       <button class="btn primary" id="nextStep">Next</button>
     </div>
   </div>
@@ -347,9 +346,9 @@ function makeCube3D(scene, root, onTap) {
       const t = orient(x, y), a = m.toFloat64Array(), b = t.toFloat64Array();
       const changed = a.some((v, k) => Math.abs(v - b[k]) > 0.02);
       m = t;
-      root.style.transition = animate && changed ? 'transform .38s ease' : '';
+      root.style.transition = animate && changed ? 'transform .6s ease' : '';
       view();
-      if (animate && changed) setTimeout(() => { root.style.transition = ''; }, 400);
+      if (animate && changed) setTimeout(() => { root.style.transition = ''; }, 620);
       return changed;
     },
     turn(move, ms, done) {
@@ -523,7 +522,6 @@ $('clearBtn').onclick = () => {
 
 // ---------- solving ----------
 const DIR_TEXT = { 1: 'clockwise', 3: 'counter-clockwise', 2: 'twice (half turn)' };
-const inverse = m => m[1] === "'" ? m[0] : m[1] === '2' ? m : m + "'";
 const isSolved = s => s.every((v, i) => v === ((i / 9) | 0));
 const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 function completed() { const s = Int8Array.from(st); for (let i = 0; i < 54; i++) if (s[i] < 0) s[i] = Math.log2(A.poss[i]); return s; }
@@ -561,17 +559,18 @@ $('solveBtn').onclick = () => {
 // ---------- step-by-step ----------
 const HOME = [-26, -36];
 const VIEWS = [[-34, -36], HOME, HOME, [34, -36], [-26, 36], [-26, -144]]; // camera faces the layer being turned
-let stepSol = null, pos = 0, stepT = null;
+let stepSol = null, pos = 0, stepT = null, gen = 0;
+const TURN_MS = { 1: 2250, 3: 2250, 2: 3300 }; // slow enough to follow by hand
 function startSteps() {
   const s = currentSol(); if (!s || !s.moves.length) return;
   if (forcedList().length) autofill();
   stepSol = s; pos = 0; stepping = true;
   $('editUI').hidden = true; $('stepUI').hidden = false; $('closeSteps').hidden = false;
-  cube.cancel(); cube.set(s.states[0]); cube.setView(...HOME, true); showArrow(null);
-  renderStep();
+  showStep();
 }
+function stopLoop() { gen++; clearTimeout(stepT); cube.cancel(); }
 function exitSteps() {
-  clearTimeout(stepT); cube.cancel(); showArrow(null);
+  stopLoop(); showArrow(null);
   stepping = false; stepSol = null;
   $('editUI').hidden = false; $('stepUI').hidden = true; $('closeSteps').hidden = true;
   cube.setView(...HOME, true); render();
@@ -585,53 +584,51 @@ function renderStep() {
   } else {
     const m = stepSol.moves[pos - 1], { f, q } = parseMove(m);
     $('mvNow').textContent = m;
-    $('mvWhat').textContent = `Turn the ${FACE_NAMES[f].toLowerCase()} layer (${COLOR_NAMES[f]} center) ${DIR_TEXT[q]}, as the arrow shows.` + (pos === n ? ' Solved!' : '');
+    $('mvWhat').textContent = `Turn the ${FACE_NAMES[f].toLowerCase()} layer (${COLOR_NAMES[f]} center) ${DIR_TEXT[q]}, as the arrow shows.` + (pos === n ? ' Then it’s solved!' : '');
   }
-  $('prevStep').disabled = $('replayStep').disabled = pos === 0;
+  $('prevStep').disabled = pos === 0;
   $('nextStep').textContent = pos === n ? 'Done' : 'Next';
 }
-function animateStep(move, from, to, face) {
-  clearTimeout(stepT); cube.cancel();
-  const target = stepSol.states[to];
-  cube.set(stepSol.states[from]);
-  pos = to; renderStep();
-  const settle = () => {
-    cube.set(target);
-    const shown = pos ? stepSol.moves[pos - 1] : null;
-    showArrow(shown);
-    if (to < from) cube.setView(...(shown ? VIEWS[parseMove(shown).f] : HOME), true);
+// Show the current step and keep replaying its turn until the user moves on.
+function showStep() {
+  stopLoop(); renderStep();
+  const g = gen, { states, moves } = stepSol;
+  if (pos === 0) { cube.set(states[0]); showArrow(null); cube.setView(...HOME, true); return; }
+  const m = moves[pos - 1], { f, q } = parseMove(m);
+  const moved = cube.setView(...VIEWS[f], true);
+  showArrow(m);
+  cube.set(states[pos - 1]);
+  if (reduceMotion()) { cube.set(states[pos]); return; }
+  const cycle = () => {
+    if (g !== gen) return;
+    cube.set(states[pos - 1]);
+    stepT = setTimeout(() => {
+      if (g !== gen) return;
+      cube.turn(m, TURN_MS[q], () => {
+        if (g !== gen) return;
+        cube.set(states[pos]);
+        stepT = setTimeout(cycle, 1400); // hold the result, then go again
+      });
+    }, 700);
   };
-  if (reduceMotion()) { cube.setView(...VIEWS[face], false); showArrow(move); settle(); return; }
-  const moved = cube.setView(...VIEWS[face], true);
-  showArrow(move);
-  const ms = parseMove(move).q === 2 ? 1100 : 750;
-  stepT = setTimeout(() => cube.turn(move, ms, settle), moved ? 550 : 300);
+  stepT = setTimeout(cycle, moved ? 500 : 0);
 }
 function next() {
   if (!stepSol) return;
   if (pos >= stepSol.moves.length) { exitSteps(); return; }
-  const m = stepSol.moves[pos];
-  animateStep(m, pos, pos + 1, parseMove(m).f);
+  pos++; showStep();
 }
 function prev() {
   if (!stepSol || pos === 0) return;
-  const m = stepSol.moves[pos - 1];
-  animateStep(inverse(m), pos, pos - 1, parseMove(m).f);
-}
-function replay() {
-  if (!stepSol || pos === 0) return;
-  const m = stepSol.moves[pos - 1];
-  animateStep(m, pos - 1, pos, parseMove(m).f);
+  pos--; showStep();
 }
 $('nextStep').onclick = next;
 $('prevStep').onclick = prev;
-$('replayStep').onclick = replay;
 $('closeSteps').onclick = exitSteps;
 document.addEventListener('keydown', e => {
   if (!stepping) return;
   if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
   else if (e.key === 'ArrowLeft') prev();
-  else if (e.key === 'r' || e.key === 'R') replay();
   else if (e.key === 'Escape') exitSteps();
 });
 
