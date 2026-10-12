@@ -97,6 +97,40 @@ button:disabled { opacity: .35; cursor: default; }
 .move .what { color: var(--muted); font-size: 14px; min-height: 2.8em; text-wrap: balance; }
 .steprow { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
 
+/* corner buttons, sheets, camera */
+.corner { position: absolute; top: 0; z-index: 2; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; color: var(--ink); }
+.corner svg { width: 21px; height: 21px; }
+.corner.left { left: 0; } .corner.right { right: 0; }
+body.stepping .corner { display: none; }
+.sheet { position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.45); display: flex; align-items: flex-end; }
+.panel { background: var(--surface); width: 100%; max-width: 560px; margin: 0 auto; border-radius: 20px 20px 0 0; padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)); max-height: 80%; overflow: auto; display: grid; gap: 12px; }
+.paneltop { display: flex; justify-content: space-between; align-items: center; font-size: 17px; }
+.saveform { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.saveform input { height: 50px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; font-size: 16px; padding: 0 14px; min-width: 0; -webkit-user-select: text; user-select: text; }
+.saveform .btn { padding: 0 20px; }
+.savedlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.savedlist li { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+.savedlist .empty { display: block; color: var(--muted); font-size: 14px; padding: 8px 2px; }
+.savedlist .load { text-align: left; border: 1px solid var(--line); background: transparent; border-radius: 12px; padding: 10px 12px; display: grid; gap: 1px; min-width: 0; }
+.savedlist .load b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.savedlist .load span { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.savedlist .del { min-width: 48px; border: 1px solid var(--line); background: transparent; border-radius: 12px; color: var(--muted); font-size: 20px; }
+.savedlist .del.armed { color: var(--bad); border-color: var(--bad); font-size: 14px; font-weight: 600; padding: 0 10px; }
+.camsheet { position: fixed; inset: 0; z-index: 40; background: var(--bg); box-shadow: 0 0 0 100vmax var(--bg); max-width: 560px; margin: 0 auto; display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; gap: 10px; padding: calc(10px + env(safe-area-inset-top, 0px)) 16px calc(14px + env(safe-area-inset-bottom, 0px)); }
+.camsheet[hidden] { display: none !important; }
+.camtop { display: flex; justify-content: space-between; align-items: center; }
+.seg { display: inline-grid; grid-template-columns: 1fr 1fr; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 3px; }
+.seg button { border: none; background: transparent; border-radius: 9px; padding: 8px 16px; font-weight: 600; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.camstage { position: relative; min-height: 0; border-radius: 16px; overflow: hidden; background: var(--plastic); }
+.camstage canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.takebig { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 10px; color: #fff; font-weight: 600; font-size: 17px; cursor: pointer; }
+.takebig svg { width: 56px; height: 56px; }
+.camhint { margin: 0; text-align: center; color: var(--muted); font-size: 14px; min-height: 2.8em; text-wrap: balance; }
+.camrow { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
+.camrow .btn { cursor: pointer; }
+.vh { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; pointer-events: none; }
+
 .toast { position: fixed; left: 50%; top: calc(16px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 99px; font-weight: 600; font-size: 14px; z-index: 20; pointer-events: none; opacity: 0; transition: opacity .2s; max-width: calc(100% - 32px); text-align: center; }
 .toast.show { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .sw, .toast { transition: none; } }
@@ -107,6 +141,8 @@ button:disabled { opacity: .35; cursor: default; }
 <div class="app">
   <div class="scene" id="scene">
     <div class="cube3" id="cube3"></div>
+    <button class="corner left" id="camBtn" aria-label="Scan with camera"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+    <button class="corner right" id="savedBtn" aria-label="Saved cubes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v16l-6-4-6 4z"/></svg></button>
     <button class="close" id="closeSteps" aria-label="Back to editing" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   </div>
   <div class="status" id="status" role="status" aria-live="polite"></div>
@@ -128,6 +164,31 @@ button:disabled { opacity: .35; cursor: default; }
       <button class="btn primary" id="nextStep">Next</button>
     </div>
   </div>
+</div>
+<div class="sheet" id="saved" hidden>
+  <div class="panel" role="dialog" aria-label="Saved cubes">
+    <div class="paneltop"><b>Saved cubes</b><button class="corner" style="position:static" id="savedClose" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <form class="saveform" id="saveForm"><input id="saveName" maxlength="40" autocomplete="off" placeholder="Name this cube" aria-label="Name"><button class="btn primary" type="submit">Save</button></form>
+    <ul class="savedlist" id="savedList"></ul>
+  </div>
+</div>
+
+<div class="camsheet" id="cam" hidden role="dialog" aria-label="Scan with camera">
+  <div class="camtop">
+    <div class="seg"><button id="shot1">Side 1</button><button id="shot2">Side 2</button></div>
+    <button class="corner" style="position:static" id="camClose" aria-label="Close camera"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="camstage">
+    <canvas id="camCanvas"></canvas>
+    <label class="takebig" id="takeBig" for="camFile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Take photo</span></label>
+  </div>
+  <p class="camhint" id="camHint"></p>
+  <div class="camrow">
+    <label class="btn" id="retake" for="camFile" hidden>Retake</label>
+    <button class="btn" id="shutter" hidden>Capture</button>
+    <button class="btn primary" id="camUse" disabled>Use photo</button>
+  </div>
+  <input class="vh" type="file" id="camFile" accept="image/*" capture="environment">
 </div>
 <div class="toast" id="toast"></div>
 
@@ -308,16 +369,28 @@ function makeCube3D(scene, root, onTap) {
   let m = orient(-26, -36), busy = null, drag = null;
   const view = () => { root.style.transform = m.toString(); };
   view();
+  const pts = new Map(); // active fingers
+  const twistAngle = () => { const [p, q] = [...pts.values()]; return Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI; };
   scene.addEventListener('pointerdown', e => {
     if (e.target.closest('button')) return;
     e.preventDefault();
-    const f = e.target.closest && e.target.closest('.cf[data-i]');
-    drag = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, moved: false, i: f ? +f.dataset.i : null };
-    root.style.transition = '';
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     scene.setPointerCapture(e.pointerId);
+    root.style.transition = '';
+    if (pts.size === 1) {
+      const f = e.target.closest && e.target.closest('.cf[data-i]');
+      drag = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, moved: false, i: f ? +f.dataset.i : null };
+    } else if (drag) { drag.moved = true; drag.twist = twistAngle(); }
   });
   scene.addEventListener('pointermove', e => {
-    if (!drag) return;
+    if (!drag || !pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size >= 2) { // two fingers: twist the cube flat on the screen
+      const t = twistAngle(), d = ((t - drag.twist) % 360 + 540) % 360 - 180;
+      drag.twist = t;
+      m = new DOMMatrix().rotateAxisAngle(0, 0, 1, d).multiply(m);
+      view(); return;
+    }
     if (!drag.moved && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 8) return;
     drag.moved = true;
     const dx = e.clientX - drag.lx, dy = e.clientY - drag.ly;
@@ -327,8 +400,14 @@ function makeCube3D(scene, root, onTap) {
   });
   scene.addEventListener('dblclick', e => e.preventDefault());
   scene.addEventListener('selectstart', e => e.preventDefault());
-  scene.addEventListener('pointerup', () => { if (drag && !drag.moved && drag.i != null && onTap) onTap(drag.i); drag = null; });
-  scene.addEventListener('pointercancel', () => { drag = null; });
+  const lift = e => {
+    pts.delete(e.pointerId);
+    if (!drag) return;
+    if (!pts.size) { if (e.type === 'pointerup' && !drag.moved && drag.i != null && onTap) onTap(drag.i); drag = null; return; }
+    const p = [...pts.values()][0]; drag.lx = p.x; drag.ly = p.y; // keep turning with the finger that is left
+  };
+  scene.addEventListener('pointerup', lift);
+  scene.addEventListener('pointercancel', lift);
   return {
     set(st, deco) {
       for (const c of cubies) for (const f of c.faces) {
@@ -450,7 +529,7 @@ const cube = makeCube3D($('scene'), $('cube3'), i => {
   if (i % 9 === 4) { toast('Center colors are fixed'); return; }
   const v = brush < 0 || st[i] === brush ? -1 : brush;
   history.push(Int8Array.from(st)); if (history.length > 300) history.shift();
-  st[i] = v; render();
+  st[i] = v; forgetScan(i); render();
 });
 
 // direction arrow drawn on the face being turned
@@ -517,7 +596,7 @@ $('clearBtn').onclick = () => {
   const b = $('clearBtn');
   if (!clearArm) { b.classList.add('warn'); toast('Tap again to clear everything'); clearArm = setTimeout(() => { clearArm = null; b.classList.remove('warn'); }, 3000); return; }
   clearTimeout(clearArm); clearArm = null; b.classList.remove('warn');
-  history.push(Int8Array.from(st)); st = emptyState(); render(); toast('Cleared');
+  history.push(Int8Array.from(st)); st = emptyState(); resetScans(); render(); toast('Cleared');
 };
 
 // ---------- solving ----------
@@ -564,14 +643,14 @@ const TURN_MS = { 1: 2250, 3: 2250, 2: 3300 }; // slow enough to follow by hand
 function startSteps() {
   const s = currentSol(); if (!s || !s.moves.length) return;
   if (forcedList().length) autofill();
-  stepSol = s; pos = 0; stepping = true;
+  stepSol = s; pos = 0; stepping = true; document.body.classList.add('stepping');
   $('editUI').hidden = true; $('stepUI').hidden = false; $('closeSteps').hidden = false;
   showStep();
 }
 function stopLoop() { gen++; clearTimeout(stepT); cube.cancel(); }
 function exitSteps() {
   stopLoop(); showArrow(null);
-  stepping = false; stepSol = null;
+  stepping = false; stepSol = null; document.body.classList.remove('stepping');
   $('editUI').hidden = false; $('stepUI').hidden = true; $('closeSteps').hidden = true;
   cube.setView(...HOME, true); render();
 }
@@ -632,8 +711,356 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'Escape') exitSteps();
 });
 
+// ---------- saved cubes (private per person when the page runs on claude.ai, else this browser) ----------
+const store = (() => {
+  const LS = 'cube-solver-saved';
+  let db = null, uid = null;
+  const lsAll = () => { try { return JSON.parse(localStorage.getItem(LS) || '[]'); } catch (e) { return []; } };
+  const lsPut = a => { try { localStorage.setItem(LS, JSON.stringify(a)); } catch (e) {} };
+  const ready = (async () => {
+    try {
+      if (!window.claude || !window.claude.use) return;
+      const [d, u] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+      const id = d && u ? await u.id() : null;
+      if (id) { db = d; uid = id; }
+    } catch (e) {}
+  })();
+  const col = () => db.collection('data/users/' + uid);
+  return {
+    async list() {
+      await ready;
+      const rows = db ? (await col().get()).docs.map(d => ({ id: d.id, ...d.data() })) : lsAll();
+      return rows.sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt)));
+    },
+    async save(id, rec) {
+      await ready;
+      if (db) await col().doc(id).set(rec);
+      else lsPut([...lsAll().filter(x => x.id !== id), { id, ...rec }]);
+    },
+    async remove(id) {
+      await ready;
+      if (db) await col().doc(id).delete();
+      else lsPut(lsAll().filter(x => x.id !== id));
+    },
+  };
+})();
+const slug = s => s.toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'cube';
+const packState = s => Array.from(s, v => v < 0 ? '-' : String(v)).join('');
+const unpackState = str => { const s = emptyState(); for (let i = 0; i < 54; i++) { const v = str[i]; if (i % 9 !== 4) s[i] = v >= '0' && v <= '5' ? +v : -1; } return s; };
+
+function openSaved() {
+  $('saved').hidden = false;
+  $('saveName').value = '';
+  refreshSaved();
+}
+const closeSaved = () => { $('saved').hidden = true; };
+async function refreshSaved() {
+  const ul = $('savedList');
+  ul.innerHTML = '<li class="empty">Loading…</li>';
+  let rows = [];
+  try { rows = await store.list(); } catch (e) { ul.innerHTML = '<li class="empty">Couldn’t load saved cubes. Try again in a moment.</li>'; return; }
+  ul.innerHTML = '';
+  if (!rows.length) { ul.innerHTML = '<li class="empty">No saved cubes yet. Name this one and tap Save.</li>'; return; }
+  for (const r of rows) {
+    const li = document.createElement('li');
+    const load = document.createElement('button'); load.className = 'load';
+    const filled = String(r.st || '').split('').filter((c, i) => c !== '-' && i % 9 !== 4).length;
+    const when = r.savedAt ? new Date(r.savedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+    const nm = document.createElement('b'); nm.textContent = r.name || 'Untitled';
+    const meta = document.createElement('span'); meta.textContent = `${filled} of 48 · ${when}`;
+    load.append(nm, meta);
+    load.onclick = () => {
+      if (stepping) exitSteps();
+      history.push(Int8Array.from(st)); st = unpackState(String(r.st || '')); resetScans(); render();
+      closeSaved(); toast(`Loaded “${r.name}”`);
+    };
+    const del = document.createElement('button'); del.className = 'del'; del.textContent = '×'; del.setAttribute('aria-label', `Delete ${r.name}`);
+    del.onclick = async () => {
+      if (!del.classList.contains('armed')) { del.classList.add('armed'); del.textContent = 'Delete'; setTimeout(() => { del.classList.remove('armed'); del.textContent = '×'; }, 3000); return; }
+      try { await store.remove(r.id); li.remove(); if (!ul.children.length) refreshSaved(); } catch (e) { toast('Couldn’t delete. Try again.'); }
+    };
+    li.append(load, del); ul.appendChild(li);
+  }
+}
+$('savedBtn').onclick = openSaved;
+$('savedClose').onclick = closeSaved;
+$('saved').addEventListener('click', e => { if (e.target === $('saved')) closeSaved(); });
+$('saveForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const name = $('saveName').value.trim() || `Cube ${new Date().toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
+  try { await store.save(slug(name), { name, st: packState(st), savedAt: new Date().toISOString() }); $('saveName').value = ''; $('saveName').blur(); toast(`Saved “${name}”`); refreshSaved(); }
+  catch (err) { toast('Couldn’t save. Try again.'); }
+});
+
+// ---------- photo scan ----------
+// Shot 1 shows the white/green/red corner, shot 2 the yellow/orange/blue corner; together they cover all 54 stickers.
+// The outline is an affine hexagon: the near corner (c) and the far ends of its three edges (l, r, d).
+const SHOTS = {
+  1: { colors: [0, 2, 1], text: 'Point a corner at the camera: white on top, green on the left, red on the right.',
+       map: i => i },
+  2: { colors: [3, 4, 5], text: 'Flip the cube: yellow on top, orange on the left, blue on the right.',
+       map: i => { const p = POS[i]; return IDX.get([-p[2], -p[1], -p[0]].join()); } },
+};
+const DEFAULT_RGB = [[228, 230, 232], [190, 30, 40], [20, 150, 70], [235, 208, 40], [240, 110, 30], [25, 70, 185]];
+const scans = {};
+let shot = 1, handles = null, src = null, srcW = 0, srcH = 0, stream = null, video = null, live = false, haveShot = false, camRAF = 0;
+const cv = $('camCanvas'), ctx = cv.getContext('2d');
+const srcCanvas = document.createElement('canvas'), srcCtx = srcCanvas.getContext('2d', { willReadFrequently: true });
+
+const sub = (a, b) => [a[0] - b[0], a[1] - b[1]], add = (a, b) => [a[0] + b[0], a[1] + b[1]], neg = a => [-a[0], -a[1]], len = a => Math.hypot(a[0], a[1]);
+function geom(toXY) {
+  const C = toXY(handles.c), L = toXY(handles.l), R = toXY(handles.r), D = toXY(handles.d);
+  const eL = sub(L, C), eR = sub(R, C), eD = sub(D, C);
+  return { C, L, R, D, eL, eR, eD, faces: { 0: { O: add(add(C, eL), eR), a: neg(eL), b: neg(eR) }, 2: { O: L, a: neg(eL), b: eD }, 1: { O: C, a: eR, b: eD } } };
+}
+const at = (fc, r, c) => [fc.O[0] + (c + .5) / 3 * fc.a[0] + (r + .5) / 3 * fc.b[0], fc.O[1] + (c + .5) / 3 * fc.a[1] + (r + .5) / 3 * fc.b[1]];
+function initHandles() {
+  if (handles) return;
+  const S = Math.min(srcW, srcH) * 0.3, cx = srcW / 2, cy = srcH / 2;
+  const n = (x, y) => [x / srcW, y / srcH];
+  handles = { c: n(cx, cy), l: n(cx - 0.866 * S, cy - 0.5 * S), r: n(cx + 0.866 * S, cy - 0.5 * S), d: n(cx, cy + S) };
+}
+function fit() {
+  const cw = cv.clientWidth, ch = cv.clientHeight, s = Math.min(cw / srcW, ch / srcH);
+  return { x: (cw - srcW * s) / 2, y: (ch - srcH * s) / 2, s };
+}
+function drawCam() {
+  const dpr = window.devicePixelRatio || 1, cw = cv.clientWidth, ch = cv.clientHeight;
+  if (cv.width !== Math.round(cw * dpr) || cv.height !== Math.round(ch * dpr)) { cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr); }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, cw, ch);
+  const source = haveShot ? srcCanvas : live ? video : null;
+  if (!source || !srcW) return;
+  const r = fit();
+  ctx.drawImage(source, r.x, r.y, srcW * r.s, srcH * r.s);
+  const g = geom(([u, v]) => [r.x + u * srcW * r.s, r.y + v * srcH * r.s]);
+  const line = (a, b, w) => { ctx.lineWidth = w + 2; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.stroke(); ctx.lineWidth = w; ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.stroke(); };
+  for (const slot of [0, 2, 1]) {
+    const fc = g.faces[slot];
+    for (let t = 0; t <= 3; t++) {
+      const w = t === 0 || t === 3 ? 2.5 : 1.2;
+      const pa = add(fc.O, [fc.a[0] * t / 3, fc.a[1] * t / 3]), pb = add(fc.O, [fc.b[0] * t / 3, fc.b[1] * t / 3]);
+      line(pa, add(pa, fc.b), w); line(pb, add(pb, fc.a), w);
+    }
+    const ctr = at(fc, 1, 1), col = SHOTS[shot].colors[[0, 2, 1].indexOf(slot)];
+    ctx.beginPath(); ctx.arc(ctr[0], ctr[1], 8, 0, Math.PI * 2);
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue(`--c${col}`); ctx.fill();
+    ctx.lineWidth = 2.5; ctx.strokeStyle = '#fff'; ctx.stroke();
+  }
+  for (const k of ['c', 'l', 'r', 'd']) {
+    const p = k === 'c' ? g.C : k === 'l' ? g.L : k === 'r' ? g.R : g.D;
+    ctx.beginPath(); ctx.arc(p[0], p[1], k === 'c' ? 13 : 11, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,.95)'; ctx.fill(); ctx.lineWidth = 3;
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent'); ctx.stroke();
+  }
+}
+// drag the dots: the near-corner dot moves the whole outline, the others reshape it
+let camDrag = null;
+cv.addEventListener('pointerdown', e => {
+  if (!srcW || !handles) return;
+  e.preventDefault();
+  const rect = cv.getBoundingClientRect(), x = e.clientX - rect.left, y = e.clientY - rect.top, r = fit();
+  let best = null, bd = 34;
+  for (const k of ['c', 'l', 'r', 'd']) { const d = Math.hypot(r.x + handles[k][0] * srcW * r.s - x, r.y + handles[k][1] * srcH * r.s - y); if (d < bd) { bd = d; best = k; } }
+  camDrag = { k: best || 'c', x, y };
+  cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove', e => {
+  if (!camDrag) return;
+  const rect = cv.getBoundingClientRect(), x = e.clientX - rect.left, y = e.clientY - rect.top, r = fit();
+  const du = (x - camDrag.x) / (srcW * r.s), dv = (y - camDrag.y) / (srcH * r.s);
+  camDrag.x = x; camDrag.y = y;
+  const move = k => { handles[k] = [handles[k][0] + du, handles[k][1] + dv]; };
+  if (camDrag.k === 'c') ['c', 'l', 'r', 'd'].forEach(move); else move(camDrag.k);
+  if (!live || haveShot) drawCam();
+});
+const endCamDrag = () => { camDrag = null; };
+cv.addEventListener('pointerup', endCamDrag); cv.addEventListener('pointercancel', endCamDrag);
+
+function setSource(w, h) {
+  const k = Math.min(1, 1600 / Math.max(w, h));
+  srcW = Math.round(w * k); srcH = Math.round(h * k);
+  initHandles();
+}
+function camUI() {
+  $('shot1').setAttribute('aria-pressed', String(shot === 1));
+  $('shot2').setAttribute('aria-pressed', String(shot === 2));
+  $('camHint').textContent = haveShot ? 'Drag the dots onto the cube’s corners, then tap Use photo.' : SHOTS[shot].text + (live ? ' Line it up with the outline.' : '');
+  $('takeBig').hidden = haveShot || live;
+  $('shutter').hidden = !live || haveShot;
+  $('retake').hidden = !haveShot;
+  $('camUse').disabled = !haveShot;
+}
+function liveLoop() { cancelAnimationFrame(camRAF); const tick = () => { if (!live || haveShot || $('cam').hidden) return; drawCam(); camRAF = requestAnimationFrame(tick); }; tick(); }
+async function startLive() {
+  if (stream || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+  try {
+    stream = await Promise.race([
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 } }, audio: false }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000)),
+    ]);
+    video = document.createElement('video'); video.playsInline = true; video.muted = true; video.srcObject = stream;
+    await video.play();
+    if (!video.videoWidth) await new Promise(r => video.addEventListener('loadedmetadata', r, { once: true }));
+    if ($('cam').hidden) { stopLive(); return; }
+    live = true; if (!haveShot) setSource(video.videoWidth, video.videoHeight);
+    camUI(); liveLoop();
+  } catch (e) { stream = null; live = false; camUI(); }
+}
+function stopLive() { cancelAnimationFrame(camRAF); if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; live = false; }
+function openCam() {
+  if (stepping) exitSteps();
+  shot = scans[1] && !scans[2] ? 2 : 1;
+  haveShot = false;
+  $('cam').hidden = false; camUI();
+  requestAnimationFrame(drawCam);
+  startLive();
+}
+function closeCam() { stopLive(); $('cam').hidden = true; haveShot = false; }
+$('camBtn').onclick = openCam;
+$('camClose').onclick = closeCam;
+$('shot1').onclick = () => { shot = 1; camUI(); drawCam(); };
+$('shot2').onclick = () => { shot = 2; camUI(); drawCam(); };
+$('retake').onclick = () => { haveShot = false; camUI(); if (live) { setSource(video.videoWidth, video.videoHeight); liveLoop(); } else { drawCam(); $('camFile').click(); } };
+$('shutter').onclick = () => {
+  if (!live) return;
+  setSource(video.videoWidth, video.videoHeight);
+  srcCanvas.width = srcW; srcCanvas.height = srcH; srcCtx.drawImage(video, 0, 0, srcW, srcH);
+  haveShot = true; camUI(); drawCam();
+};
+$('camFile').addEventListener('change', async e => {
+  const file = e.target.files && e.target.files[0]; e.target.value = '';
+  if (!file) return;
+  const url = URL.createObjectURL(file), img = new Image();
+  try {
+    img.src = url; await img.decode();
+    setSource(img.naturalWidth, img.naturalHeight);
+    srcCanvas.width = srcW; srcCanvas.height = srcH; srcCtx.drawImage(img, 0, 0, srcW, srcH);
+    haveShot = true; camUI(); drawCam();
+  } catch (err) { toast('Couldn’t open that photo. Try another.'); }
+  finally { URL.revokeObjectURL(url); }
+});
+window.addEventListener('resize', () => { if (!$('cam').hidden) drawCam(); });
+
+// color reading
+// brightness-free color: chromaticity plus saturation, so a face in shadow reads the same as one in light
+function feat([r, g, b]) {
+  const sum = Math.max(1, r + g + b), mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+  return [r / sum, g / sum, 0.5 * (mx - mn) / Math.max(1, mx)];
+}
+function sampleShot() {
+  const data = srcCtx.getImageData(0, 0, srcW, srcH).data;
+  const g = geom(([u, v]) => [u * srcW, v * srcH]);
+  const rad = Math.max(2, Math.min(len(g.eL), len(g.eR), len(g.eD)) / 3 * 0.2), step = Math.max(1, Math.floor(rad / 4));
+  const out = [];
+  for (const slot of [0, 2, 1]) for (let k = 0; k < 9; k++) {
+    const [x, y] = at(g.faces[slot], (k / 3) | 0, k % 3);
+    const R = [], G = [], B = [];
+    for (let yy = Math.round(y - rad); yy <= y + rad; yy += step) for (let xx = Math.round(x - rad); xx <= x + rad; xx += step) {
+      if (xx < 0 || yy < 0 || xx >= srcW || yy >= srcH) continue;
+      const p = (yy * srcW + xx) * 4; R.push(data[p]); G.push(data[p + 1]); B.push(data[p + 2]);
+    }
+    const med = a => { a.sort((x, y) => x - y); return a[a.length >> 1]; };
+    out.push({ i: SHOTS[shot].map(slot * 9 + k), rgb: R.length ? [med(R), med(G), med(B)] : null });
+  }
+  // white balance on the white center (side 1) or the brightest near-grey sticker
+  let ref = (out.find(s => s.i === 4) || {}).rgb;
+  if (!ref) {
+    const greys = out.filter(s => s.rgb && (Math.max(...s.rgb) - Math.min(...s.rgb)) / Math.max(1, Math.max(...s.rgb)) < 0.3);
+    greys.sort((a, b) => Math.min(...b.rgb) - Math.min(...a.rgb));
+    ref = greys.length ? greys[0].rgb : null;
+  }
+  const gain = ref ? ref.map(c => Math.max(0.5, Math.min(3, 230 / Math.max(1, c)))) : [1, 1, 1];
+  for (const s of out) s.lab = s.rgb ? feat(s.rgb.map((c, j) => c * gain[j])) : null;
+  return out;
+}
+// Most likely legal cube: every corner/edge slot picks a (piece, twist) whose colors best match what was seen.
+// Same mask DP as analyze(), minimising cost instead of counting, so one misread can't drag its neighbours along.
+function bestFit(n, mod, slots, colorsOf, cost) {
+  const N = 1 << n, S = mod * 2, full = N - 1;
+  const dom = slots.map((fs, i) => {
+    const d = [];
+    for (let j = 0; j < n; j++) for (let o = 0; o < mod; o++) {
+      let c = 0;
+      for (let m = 0; m < fs.length && c < Infinity; m++) c += cost[fs[m]][colorsOf(j, o, m)];
+      if (c < Infinity) d.push({ e: j * mod + o, c });
+    }
+    return d;
+  });
+  const best = new Float64Array(N * S).fill(Infinity), from = new Int32Array(N * S).fill(-1), pick = new Int16Array(N * S);
+  best[0] = 0;
+  for (let mask = 0; mask < full; mask++) {
+    const base = mask * S;
+    for (let s = 0; s < S; s++) {
+      const v = best[base + s]; if (v === Infinity) continue;
+      for (const { e, c } of dom[PC[mask]]) {
+        const j = (e / mod) | 0, o = e % mod; if ((mask >> j) & 1) continue;
+        const g = PC[mask >> (j + 1)] & 1, ns = (mask | (1 << j)) * S + (((s >> 1) + o) % mod) * 2 + ((s & 1) ^ g);
+        if (v + c < best[ns]) { best[ns] = v + c; from[ns] = base + s; pick[ns] = e; }
+      }
+    }
+  }
+  const trace = p => { const out = new Array(n); let k = full * S + p; for (let slot = n - 1; slot >= 0; slot--) { out[slot] = pick[k]; k = from[k]; } return out; };
+  return { cost: p => best[full * S + p], trace };
+}
+function decodeCube(cost) {
+  const C = bestFit(8, 3, CF, (j, o, m) => CC[j][(m - o + 3) % 3], cost);
+  const E = bestFit(12, 2, EF, (j, o, m) => EC[j][(m + o) % 2], cost);
+  const p = C.cost(0) + E.cost(0) <= C.cost(1) + E.cost(1) ? 0 : 1;
+  if (C.cost(p) + E.cost(p) === Infinity) return null;
+  const out = emptyState();
+  C.trace(p).forEach((e, i) => { const j = (e / 3) | 0, o = e % 3; for (let m = 0; m < 3; m++) out[CF[i][m]] = CC[j][(m - o + 3) % 3]; });
+  E.trace(p).forEach((e, i) => { const j = e >> 1, o = e & 1; for (let m = 0; m < 2; m++) out[EF[i][m]] = EC[j][(m + o) % 2]; });
+  return out;
+}
+function resetScans() { for (const k in scans) delete scans[k]; }
+function forgetScan(i) { for (const k in scans) scans[k] = scans[k].filter(s => s.i !== i); }
+function applyShot() {
+  scans[shot] = sampleShot();
+  const seen = new Map();
+  for (const k in scans) for (const s of scans[k]) if (s.lab) seen.set(s.i, s.lab);
+  const dist2 = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
+  // references: defaults, replaced by the centers the camera saw
+  let refs = DEFAULT_RGB.map(feat).map((d, c) => seen.get(c * 9 + 4) || d);
+  // stickers not from a photo stay as they are; photographed ones are re-decided from all photos together
+  const base = Int8Array.from(st);
+  for (const i of seen.keys()) if (i % 9 !== 4) base[i] = -1;
+  const costFor = () => Array.from({ length: 54 }, (_, i) => {
+    if (i % 9 === 4) return [0, 1, 2, 3, 4, 5].map(c => c === ((i / 9) | 0) ? 0 : Infinity);
+    if (seen.has(i)) return refs.map(r => dist2(seen.get(i), r));
+    if (base[i] >= 0) return [0, 1, 2, 3, 4, 5].map(c => c === base[i] ? 0 : Infinity);
+    return [0, 0, 0, 0, 0, 0];
+  });
+  let fit = decodeCube(costFor());
+  if (fit) { // refine each color's reference from what was decoded, then decode again
+    refs = refs.map((r, c) => {
+      const mine = [...seen].filter(([i]) => fit[i] === c).map(([, f]) => f);
+      return mine.length >= 2 ? [0, 1, 2].map(k => mine.reduce((t, f) => t + f[k], 0) / mine.length) : r;
+    });
+    fit = decodeCube(costFor()) || fit;
+  }
+  const work = Int8Array.from(base);
+  let fixed = 0;
+  for (const [i, f] of seen) {
+    if (i % 9 === 4) continue;
+    const d = refs.map(r => dist2(f, r)), raw = d.indexOf(Math.min(...d));
+    work[i] = fit ? fit[i] : raw;
+    if (fit && fit[i] !== raw) fixed++;
+  }
+  history.push(Int8Array.from(st));
+  st = work; render();
+  const extra = autofill();
+  if (extra) history.pop(); // one undo step for the whole scan
+  closeCam();
+  const n = scans[shot].filter(s => s.i % 9 !== 4).length;
+  const parts = [`Read ${n} stickers`];
+  if (fixed) parts.push(`${fixed} fixed by cube rules`);
+  if (extra) parts.push(`${extra} more worked out`);
+  toast(parts.join(', ') + (A.total > 1n ? '. Now photo the other side.' : fit ? '. Check the cube, then Solve.' : '. Some colors clash: fix the red stickers.'));
+}
+$('camUse').onclick = () => { if (haveShot) applyShot(); };
+
 render();
-window.__cube = { analyze, applyMove, solvedState, setState(s) { st = Int8Array.from(s); render(); }, get st() { return st; } };
+window.__cube = { analyze, applyMove, solvedState, setState(s) { st = Int8Array.from(s); resetScans(); render(); }, get st() { return st; } };
 })();
 </script>
 </body>
