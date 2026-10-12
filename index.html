@@ -173,7 +173,6 @@ body.stepping .corner { display: none; }
   </div>
 
   <div class="controls" id="gameUI" hidden>
-    <div class="pad" id="pad"></div>
     <div class="steprow">
       <button class="btn" id="newGame">New cube</button>
       <button class="btn fill" id="hintBtn">Hint</button>
@@ -263,10 +262,21 @@ const PERM = FD.map(([n]) => {
   }
   return perm;
 });
+const SLICE_N = { M: [-1, 0, 0], E: [0, -1, 0], S: [0, 0, 1] };
+const SLICE_PERM = {};
+for (const [k, n] of Object.entries(SLICE_N)) {
+  const perm = new Int8Array(54);
+  for (let i = 0; i < 54; i++) { const p = POS[i]; perm[i] = i; }
+  for (let i = 0; i < 54; i++) { const p = POS[i]; if (p[0]*n[0] + p[1]*n[1] + p[2]*n[2] === 0) perm[IDX.get(rotCW(p, n).join())] = i; }
+  SLICE_PERM[k] = perm;
+}
+// a move's turning axis and which layer along it (1 = outer face layer, 0 = middle)
+const axisOf = L => FACE.includes(L) ? { n: FD[FACE.indexOf(L)][0], v: 1 } : { n: SLICE_N[L], v: 0 };
 function parseMove(m) { return { f: FACE.indexOf(m[0]), q: m[1] === "'" ? 3 : m[1] === '2' ? 2 : 1 }; }
 function applyMove(s, m) {
-  const { f, q } = parseMove(m); let a = s;
-  for (let t = 0; t < q; t++) { const b = new Int8Array(54); for (let i = 0; i < 54; i++) b[i] = a[PERM[f][i]]; a = b; }
+  const { q } = parseMove(m), perm = FACE.includes(m[0]) ? PERM[FACE.indexOf(m[0])] : SLICE_PERM[m[0]];
+  let a = s;
+  for (let t = 0; t < q; t++) { const b = new Int8Array(54); for (let i = 0; i < 54; i++) b[i] = a[perm[i]]; a = b; }
   return a;
 }
 function solvedState() { const s = new Int8Array(54); for (let i = 0; i < 54; i++) s[i] = (i / 9) | 0; return s; }
@@ -415,13 +425,42 @@ function makeCube3D(scene, root, onTap) {
       m = new DOMMatrix().rotateAxisAngle(0, 0, 1, d).multiply(m);
       view(); return;
     }
-    if (!drag.moved && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 8) return;
+    if (drag.swiped) return;
+    if (!drag.moved && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < (api.onSwipe && drag.i != null ? 14 : 8)) return;
+    if (!drag.moved && api.onSwipe && drag.i != null) { // started on a sticker: turn that row instead of the view
+      drag.moved = drag.swiped = true;
+      const mv = swipeMove(drag.i, e.clientX - drag.x, e.clientY - drag.y);
+      if (mv) api.onSwipe(mv);
+      return;
+    }
     drag.moved = true;
     const dx = e.clientX - drag.lx, dy = e.clientY - drag.ly;
     drag.lx = e.clientX; drag.ly = e.clientY;
     m = new DOMMatrix().rotateAxisAngle(0, 1, 0, dx * 0.5).rotateAxisAngle(1, 0, 0, -dy * 0.5).multiply(m);
     view();
   });
+  // which layer a swipe turns: the sticker moves along the face axis that best matches the finger on screen
+  function swipeMove(i, dx, dy) {
+    const p = POS[i], n = FD[(i / 9) | 0][0], a = n.findIndex(v => v !== 0);
+    const cubie = p.map((v, k) => (v - n[k]) / 2), mag = Math.hypot(dx, dy);
+    let best = null;
+    for (const k of [0, 1, 2]) if (k !== a) for (const sg of [1, -1]) {
+      const d = [0, 0, 0]; d[k] = sg;
+      const q = m.transformPoint(new DOMPoint(d[0], -d[1], d[2], 0)), L = Math.hypot(q.x, q.y);
+      if (L < 1e-6) continue;
+      const score = (q.x * dx + q.y * dy) / (L * mag);
+      if (!best || score > best.score) best = { score, d };
+    }
+    if (!best || best.score < 0.45) return null;
+    const d = best.d, r = [n[1]*d[2] - n[2]*d[1], n[2]*d[0] - n[0]*d[2], n[0]*d[1] - n[1]*d[0]]; // +90° about r moves the sticker along d
+    const b = r.findIndex(v => v !== 0), layer = cubie[b];
+    if (layer !== 0) {
+      const N = [0, 0, 0]; N[b] = layer;
+      return FACE[FD.findIndex(fd => fd[0].join() === N.join())] + (r[b] === layer ? "'" : '');
+    }
+    const [L, sn] = Object.entries(SLICE_N).find(([, v]) => v[b] !== 0);
+    return L + (r[b] === sn[b] ? "'" : '');
+  }
   scene.addEventListener('dblclick', e => e.preventDefault());
   scene.addEventListener('selectstart', e => e.preventDefault());
   const lift = e => {
@@ -432,7 +471,8 @@ function makeCube3D(scene, root, onTap) {
   };
   scene.addEventListener('pointerup', lift);
   scene.addEventListener('pointercancel', lift);
-  return {
+  const api = {
+    onSwipe: null,
     set(st, deco) {
       for (const c of cubies) for (const f of c.faces) {
         const v = st[f.i]; let cls = f.cls;
@@ -457,9 +497,9 @@ function makeCube3D(scene, root, onTap) {
     },
     turn(move, ms, done) {
       if (busy) { clearTimeout(busy.t); busy.finish(); }
-      const { f, q } = parseMove(move); const n = FD[f][0];
+      const { q } = parseMove(move), { n, v: lv } = axisOf(move[0]);
       const ang = q === 3 ? -90 : q * 90, ax = `${n[0]}, ${-n[1]}, ${n[2]}`;
-      const layer = cubies.filter(c => c.p[0]*n[0] + c.p[1]*n[1] + c.p[2]*n[2] === 1);
+      const layer = cubies.filter(c => c.p[0]*n[0] + c.p[1]*n[1] + c.p[2]*n[2] === lv);
       layer.forEach(c => { c.el.style.transition = 'none'; c.el.style.transform = `rotate3d(${ax}, 0deg) ${c.base}`; });
       void root.offsetWidth;
       layer.forEach(c => { c.el.style.transition = `transform ${ms}ms cubic-bezier(.45,.05,.3,1)`; c.el.style.transform = `rotate3d(${ax}, ${ang}deg) ${c.base}`; });
@@ -468,6 +508,7 @@ function makeCube3D(scene, root, onTap) {
     },
     cancel() { if (busy) { clearTimeout(busy.t); busy.finish(); } },
   };
+  return api;
 }
 
 // ---------- solver (cubejs two-phase, in a worker when possible) ----------
@@ -637,7 +678,7 @@ $('clearBtn').onclick = () => {
 
 // ---------- solving ----------
 const DIR_TEXT = { 1: 'clockwise', 3: 'counter-clockwise', 2: 'twice (half turn)' };
-const isSolved = s => s.every((v, i) => v === ((i / 9) | 0));
+const isSolved = s => [0, 1, 2, 3, 4, 5].every(f => { for (let k = 0; k < 9; k++) if (s[f * 9 + k] !== s[f * 9 + 4]) return false; return true; });
 const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 function completed() { const s = Int8Array.from(st); for (let i = 0; i < 54; i++) if (s[i] < 0) s[i] = Math.log2(A.poss[i]); return s; }
 function currentSol() { return A.total === 1n && sol && sol.key === completed().join(',') ? sol : null; }
@@ -1053,7 +1094,7 @@ function camUI(hint) {
   $('camChips').innerHTML = (first ? [] : need).map(c => `<div class="chip3"><span class="sw3" style="background:var(--c${c})"></span><b>${cap(c)}</b></div>`).join('');
   $('camChips').hidden = first;
   $('camHint').textContent = hint || (haveShot ? 'Couldn’t find the cube. Drag the dots onto its corners, then tap Use photo.'
-    : live ? 'It finds the cube and saves by itself.' : 'Take a photo showing three faces of the cube.');
+    : live ? 'It finds the cube and saves by itself.' : 'Live scanning can\u2019t run inside claude.ai. Tap above to take a photo; it finds the cube in it on its own.');
   $('takeBig').hidden = haveShot || live;
   $('retake').hidden = !haveShot;
   $('camUse').hidden = !haveShot;
@@ -1264,14 +1305,6 @@ function forgetScan(i) { for (const k in scans) scans[k] = scans[k].filter(s => 
 
 // ---------- play mode: solve a random cube, one hint at a time ----------
 let gaming = false, game = null, gameTimer = 0, hintBusy = false;
-const pad = $('pad');
-for (const suffix of ['', "'"]) for (const f of [0, 1, 2, 3, 4, 5]) {
-  const b = document.createElement('button'), m = FACE[f] + suffix;
-  b.textContent = m; b.style.setProperty('--c', `var(--c${f})`);
-  b.setAttribute('aria-label', `Turn the ${FACE_NAMES[f].toLowerCase()} layer ${suffix ? 'counter-clockwise' : 'clockwise'}`);
-  b.onclick = () => playMove(m);
-  pad.appendChild(b);
-}
 function scramble() {
   const out = []; let last = -1;
   while (out.length < 25) { const f = (Math.random() * 6) | 0; if (f === last) continue; last = f; out.push(FACE[f] + ['', "'", '2'][(Math.random() * 3) | 0]); }
@@ -1281,7 +1314,7 @@ const fmtTime = ms => { const t = Math.floor(ms / 1000); return `${Math.floor(t 
 function gameStatus() {
   if (!game) return;
   const t = fmtTime((game.end || Date.now()) - game.start);
-  setStatus(game.end ? `<b>Solved!</b> ${game.moves} moves · ${t}` : `<b>${game.moves}</b> moves · ${t}${game.hint ? ` · Next: <b>${game.hint}</b>` : ''}`);
+  setStatus(game.end ? `<b>Solved!</b> ${game.moves} moves · ${t}` : !game.moves && !game.hint ? 'Swipe across a row to turn it.<br>Drag around the cube to look at it.' : `<b>${game.moves}</b> moves · ${t}${game.hint ? ` · Next: <b>${game.hint}</b>` : ''}`);
 }
 function startGame() {
   if (stepping) exitSteps();
@@ -1289,11 +1322,11 @@ function startGame() {
   game = { st: s, moves: 0, start: Date.now(), end: 0, hint: null };
   gaming = true; document.body.classList.add('stepping');
   $('editUI').hidden = true; $('stepUI').hidden = true; $('gameUI').hidden = false; $('closeSteps').hidden = false;
-  cube.cancel(); showArrow(null); cube.set(s); cube.setView(...HOME, true);
+  cube.cancel(); showArrow(null); cube.set(s); cube.setView(...HOME, true); cube.onSwipe = playMove;
   clearInterval(gameTimer); gameTimer = setInterval(gameStatus, 1000); gameStatus();
 }
 function exitGame() {
-  clearInterval(gameTimer); gaming = false; game = null;
+  clearInterval(gameTimer); gaming = false; game = null; cube.onSwipe = null;
   cube.cancel(); showArrow(null); document.body.classList.remove('stepping');
   $('editUI').hidden = false; $('gameUI').hidden = true; $('closeSteps').hidden = true;
   cube.setView(...HOME, true); render();
@@ -1304,7 +1337,7 @@ function playMove(m) {
   game.st = applyMove(game.st, m); game.moves++;
   const target = game.st;
   if (game.hint) { game.hint = null; showArrow(null); }
-  cube.turn(m, reduceMotion() ? 0 : 280, () => cube.set(target));
+  cube.turn(m, reduceMotion() ? 0 : 240, () => cube.set(target));
   if (isSolved(game.st)) { game.end = Date.now(); clearInterval(gameTimer); toast(`Solved in ${game.moves} moves!`); }
   gameStatus();
 }
@@ -1313,7 +1346,8 @@ async function giveHint() { // only the single next move, and only when asked
   hintBusy = true; $('hintBtn').textContent = solver.ready ? 'Thinking…' : 'Warming up…';
   const key = packState(game.st);
   try {
-    const raw = await solver.solve(Array.from(game.st, v => FACE[v]).join(''));
+    const faceOf = []; for (let f = 0; f < 6; f++) faceOf[game.st[f * 9 + 4]] = FACE[f];
+    const raw = await solver.solve(Array.from(game.st, v => faceOf[v]).join(''));
     if (!game || packState(game.st) !== key) return; // they moved meanwhile
     const m = raw.trim().split(/\s+/)[0];
     if (!m) return;
