@@ -130,6 +130,19 @@ body.stepping .corner { display: none; }
 .camhint { margin: 0; text-align: center; color: var(--muted); font-size: 14px; min-height: 2.8em; text-wrap: balance; }
 .camrow { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
 .camrow .btn { cursor: pointer; }
+.camlead { display: grid; gap: 2px; }
+.camlead b { font-size: 20px; }
+.camlead span { color: var(--muted); font-size: 14px; }
+.chips3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.chip3 { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; font-size: 15px; }
+.sw3 { width: 22px; height: 22px; border-radius: 6px; flex: none; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
+.camstage.flash::after { content: ""; position: absolute; inset: 0; background: #fff; animation: flash .45s ease-out forwards; pointer-events: none; }
+@keyframes flash { from { opacity: .8; } to { opacity: 0; } }
+.camsheet { grid-template-rows: auto auto minmax(0, 1fr) auto auto !important; }
+.corner.left2 { left: 0; top: 52px; }
+.pad { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.pad button { position: relative; height: 50px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-family: var(--font-mono); font-weight: 700; font-size: 16px; padding-top: 6px; }
+.pad button::before { content: ""; position: absolute; top: 6px; left: 50%; width: 16px; height: 4px; margin-left: -8px; border-radius: 2px; background: var(--c); box-shadow: 0 0 0 1px rgba(0,0,0,.2); }
 .vh { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; pointer-events: none; }
 
 .toast { position: fixed; left: 50%; top: calc(16px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 99px; font-weight: 600; font-size: 14px; z-index: 20; pointer-events: none; opacity: 0; transition: opacity .2s; max-width: calc(100% - 32px); text-align: center; }
@@ -143,6 +156,7 @@ body.stepping .corner { display: none; }
   <div class="scene" id="scene">
     <div class="cube3" id="cube3"></div>
     <button class="corner left" id="camBtn" aria-label="Scan with camera"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+    <button class="corner left left2" id="gameBtn" aria-label="Play: solve a random cube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2" fill="currentColor"/><circle cx="15" cy="15" r="1.2" fill="currentColor"/><circle cx="15" cy="9" r="1.2" fill="currentColor"/><circle cx="9" cy="15" r="1.2" fill="currentColor"/></svg></button>
     <button class="corner right" id="savedBtn" aria-label="Saved cubes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v16l-6-4-6 4z"/></svg></button>
     <button class="close" id="closeSteps" aria-label="Back to editing" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   </div>
@@ -155,6 +169,14 @@ body.stepping .corner { display: none; }
       <button class="btn fill" id="autofill">Auto-fill</button>
       <button class="btn primary" id="solveBtn">Solve</button>
       <button class="btn" id="clearBtn" aria-label="Clear all stickers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
+    </div>
+  </div>
+
+  <div class="controls" id="gameUI" hidden>
+    <div class="pad" id="pad"></div>
+    <div class="steprow">
+      <button class="btn" id="newGame">New cube</button>
+      <button class="btn fill" id="hintBtn">Hint</button>
     </div>
   </div>
 
@@ -176,9 +198,10 @@ body.stepping .corner { display: none; }
 
 <div class="camsheet" id="cam" hidden role="dialog" aria-label="Scan with camera">
   <div class="camtop">
-    <div class="seg"><button id="shot1">Side 1</button><button id="shot2">Side 2</button></div>
+    <div class="camlead"><b id="camLead">Show a corner</b><span id="camHow"></span></div>
     <button class="corner" style="position:static" id="camClose" aria-label="Close camera"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   </div>
+  <div class="chips3" id="camChips" hidden></div>
   <div class="camstage">
     <canvas id="camCanvas"></canvas>
     <label class="takebig" id="takeBig" for="camFile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Take photo</span></label>
@@ -527,7 +550,7 @@ function renderPalette() {
 // cube
 let stepping = false;
 const cube = makeCube3D($('scene'), $('cube3'), i => {
-  if (stepping) return;
+  if (stepping || gaming) return;
   if (i % 9 === 4) { toast('Center colors are fixed'); return; }
   const v = brush < 0 || st[i] === brush ? -1 : brush;
   if (v >= 0 && A && A.total > 0n) {
@@ -574,7 +597,7 @@ function render() {
   const bad = new Set(); A.bad.forEach(b => b.fs.forEach(i => bad.add(i)));
   const forced = A.total > 0n ? forcedList().length : 0;
   const filled = st.reduce((n, v) => n + (v >= 0 ? 1 : 0), 0) - 6, left = 48 - filled;
-  if (!stepping) cube.set(st, { poss: A.total > 0n ? A.poss : new Uint8Array(54), bad, brush });
+  if (!stepping && !gaming) cube.set(st, { poss: A.total > 0n ? A.poss : new Uint8Array(54), bad, brush });
 
   $('autofill').textContent = forced ? `Auto-fill +${forced}` : 'Auto-fill';
   $('autofill').disabled = !forced;
@@ -583,7 +606,7 @@ function render() {
   if (A.total === 1n) ensureSolution();
   const s = currentSol();
   $('solveBtn').textContent = wantOpen ? 'Solving…' : 'Solve';
-  if (!stepping) {
+  if (!stepping && !gaming) {
     if (A.total === 0n) setStatus(diagnose(st, A), true);
     else if (filled === 0) setStatus('Hold white on top, green in front.<br>Pick a color, tap stickers, drag to turn.');
     else if (A.total > 1n) setStatus(`<b>${left}</b> left · <b>${fmtBig(A.total)}</b> cubes still fit`);
@@ -716,7 +739,7 @@ function prev() {
 }
 $('nextStep').onclick = next;
 $('prevStep').onclick = prev;
-$('closeSteps').onclick = exitSteps;
+$('closeSteps').onclick = () => gaming ? exitGame() : exitSteps();
 document.addEventListener('keydown', e => {
   if (!stepping) return;
   if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
@@ -805,37 +828,169 @@ $('saveForm').addEventListener('submit', async e => {
   catch (err) { toast('Couldn’t save. Try again.'); }
 });
 
-// ---------- photo scan ----------
-// Shot 1 shows the white/green/red corner, shot 2 the yellow/orange/blue corner; together they cover all 54 stickers.
-// The outline is an affine hexagon: the near corner (c) and the far ends of its three edges (l, r, d).
-const SHOTS = {
-  1: { colors: [0, 2, 1], text: 'Point a corner at the camera: white on top, green on the left, red on the right.',
-       map: i => i },
-  2: { colors: [3, 4, 5], text: 'Flip the cube: yellow on top, orange on the left, blue on the right.',
-       map: i => { const p = POS[i]; return IDX.get([-p[2], -p[1], -p[0]].join()); } },
-};
+// ---------- camera scan ----------
+// Side 1 shows the white/green/red corner, side 2 the yellow/orange/blue corner; together they cover all 54 stickers.
+// A fixed outline sits on the camera view; each frame is searched for a cube fitting it (a little off in size,
+// position or tilt is fine). When all 27 stickers read cleanly and hold steady, the side is captured on its own.
+// A view of any corner: colors = [top, left, right] centers; view position -> cube position via those faces' normals.
+function viewMap(colors) {
+  const [t, l, r] = colors.map(c => FD[c][0]);
+  return i => { const p = POS[i]; return IDX.get([0, 1, 2].map(k => p[0] * r[k] + p[1] * t[k] + p[2] * l[k]).join()); };
+}
+// top -> right -> left runs clockwise on screen, so it must be a real corner's clockwise color order
+const CORNER_ORDERS = new Set(CC.flatMap(c => [0, 1, 2].map(k => [c[k], c[(k + 1) % 3], c[(k + 2) % 3]].join())));
+const isCorner = ([t, l, r]) => CORNER_ORDERS.has([t, r, l].join());
 const DEFAULT_RGB = [[228, 230, 232], [190, 30, 40], [20, 150, 70], [235, 208, 40], [240, 110, 30], [25, 70, 185]];
 const scans = {};
-let shot = 1, handles = null, src = null, srcW = 0, srcH = 0, stream = null, video = null, live = false, haveShot = false, camRAF = 0;
+let handles = null, srcW = 0, srcH = 0, stream = null, video = null, live = false, haveShot = false, camRAF = 0;
+let lock = { key: '', n: 0, best: null }, cooldownUntil = 0, lastDetect = 0;
 const cv = $('camCanvas'), ctx = cv.getContext('2d');
 const srcCanvas = document.createElement('canvas'), srcCtx = srcCanvas.getContext('2d', { willReadFrequently: true });
+const work = document.createElement('canvas'), wctx = work.getContext('2d', { willReadFrequently: true });
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1]], add = (a, b) => [a[0] + b[0], a[1] + b[1]], neg = a => [-a[0], -a[1]], len = a => Math.hypot(a[0], a[1]);
+function facesOf(C, eL, eR, eD) {
+  return { C, L: add(C, eL), R: add(C, eR), D: add(C, eD), eL, eR, eD,
+    faces: { 0: { O: add(add(C, eL), eR), a: neg(eL), b: neg(eR) }, 2: { O: add(C, eL), a: neg(eL), b: eD }, 1: { O: C, a: eR, b: eD } } };
+}
 function geom(toXY) {
-  const C = toXY(handles.c), L = toXY(handles.l), R = toXY(handles.r), D = toXY(handles.d);
-  const eL = sub(L, C), eR = sub(R, C), eD = sub(D, C);
-  return { C, L, R, D, eL, eR, eD, faces: { 0: { O: add(add(C, eL), eR), a: neg(eL), b: neg(eR) }, 2: { O: L, a: neg(eL), b: eD }, 1: { O: C, a: eR, b: eD } } };
+  const C = toXY(handles.c);
+  return facesOf(C, sub(toXY(handles.l), C), sub(toXY(handles.r), C), sub(toXY(handles.d), C));
 }
 const at = (fc, r, c) => [fc.O[0] + (c + .5) / 3 * fc.a[0] + (r + .5) / 3 * fc.b[0], fc.O[1] + (c + .5) / 3 * fc.a[1] + (r + .5) / 3 * fc.b[1]];
-function initHandles() {
-  if (handles) return;
-  const S = Math.min(srcW, srcH) * 0.3, cx = srcW / 2, cy = srcH / 2;
-  const n = (x, y) => [x / srcW, y / srcH];
-  handles = { c: n(cx, cy), l: n(cx - 0.866 * S, cy - 0.5 * S), r: n(cx + 0.866 * S, cy - 0.5 * S), d: n(cx, cy + S) };
+// outline candidate in pixels: s = size, dx/dy = shift (in cube sizes), k = how flat the top looks
+function candidate(W, H, s, dx, dy, k) {
+  const S0 = Math.min(W, H) * 0.3, S = S0 * s, C = [W / 2 + dx * S0, H / 2 + dy * S0];
+  return facesOf(C, [-0.866 * S, -k * S], [0.866 * S, -k * S], [0, S]);
 }
+function guideHandles(W, H) {
+  const g = candidate(W, H, 1, 0, 0, 0.5), n = p => [p[0] / W, p[1] / H];
+  return { c: n(g.C), l: n(g.L), r: n(g.R), d: n(g.D) };
+}
+
+// color reading: brightness-free (chromaticity + saturation), white-balanced on the three known centers
+function feat([r, g, b]) {
+  const sum = Math.max(1, r + g + b), mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+  return [r / sum, g / sum, 0.5 * (mx - mn) / Math.max(1, mx)];
+}
+const REF = DEFAULT_RGB.map(feat);
+const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+function centerGains(obs, colors) { // per-channel gain mapping the seen centers onto their known colors
+  return [0, 1, 2].map(ch => {
+    let num = 0, den = 0;
+    obs.forEach((o, k) => { num += o[ch] * DEFAULT_RGB[colors[k]][ch]; den += o[ch] * o[ch]; });
+    return Math.max(0.4, Math.min(3, den ? num / den : 1));
+  });
+}
+const nearest = f => { let b = 0, bd = Infinity; REF.forEach((r, c) => { const d = dist(f, r); if (d < bd) { bd = d; b = c; } }); return [b, bd]; };
+
+// quick 3x3 patch: mean color and brightness spread
+function patch(px, W, H, x, y, r) {
+  let R = 0, G = 0, B = 0, L = 0, L2 = 0, n = 0;
+  for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
+    const xx = Math.round(x + ox * r), yy = Math.round(y + oy * r);
+    if (xx < 0 || yy < 0 || xx >= W || yy >= H) return null;
+    const p = (yy * W + xx) * 4, l = 0.3 * px[p] + 0.59 * px[p + 1] + 0.11 * px[p + 2];
+    R += px[p]; G += px[p + 1]; B += px[p + 2]; L += l; L2 += l * l; n++;
+  }
+  return { rgb: [R / n, G / n, B / n], sd: Math.sqrt(Math.max(0, L2 / n - (L / n) ** 2)), max: Math.max(R, G, B) / n };
+}
+// which corner is this? try the two likeliest colors for each center, keep real corners, best fit wins
+function readCorner(cs) {
+  const opts = cs.map(rgb => { const f = feat(rgb); return [0, 1, 2, 3, 4, 5].sort((x, y) => dist(f, REF[x]) - dist(f, REF[y])).slice(0, 2); });
+  let best = null;
+  for (const t of opts[0]) for (const l of opts[1]) for (const r of opts[2]) {
+    const colors = [t, l, r];
+    if (!isCorner(colors)) continue;
+    const gain = centerGains(cs, colors);
+    let cost = 0;
+    for (let k = 0; k < 3; k++) cost += dist(feat(cs[k].map((v, j) => v * gain[j])), REF[colors[k]]);
+    if (!best || cost < best.cost) best = { colors, gain, cost };
+  }
+  return best && best.cost < 0.2 ? best : null;
+}
+function evaluate(px, W, H, g) {
+  const r = Math.max(1.2, Math.min(len(g.eL), len(g.eR), len(g.eD)) / 3 * 0.2);
+  const order = [0, 2, 1], P = {}, cs = [];
+  for (const slot of order) { // centers first: quick reject
+    const [x, y] = at(g.faces[slot], 1, 1), q = patch(px, W, H, x, y, r);
+    if (!q || q.sd > 16 || q.max < 40) return null;
+    cs.push(q.rgb); P[slot] = q;
+  }
+  const corner = readCorner(cs);
+  if (!corner) return null;
+  let cost = corner.cost * 20, fails = 0;
+  const labels = [];
+  for (const slot of order) for (let k = 0; k < 9; k++) {
+    const [x, y] = at(g.faces[slot], (k / 3) | 0, k % 3), q = k === 4 ? P[slot] : patch(px, W, H, x, y, r);
+    if (!q || q.sd > 18 || q.max < 35) { fails++; labels.push('?'); cost += 5; continue; }
+    const [c, d] = nearest(feat(q.rgb.map((v, j) => v * corner.gain[j])));
+    if (d > 0.11) fails++;
+    labels.push(c); cost += q.sd / 10 + d * 20;
+  }
+  return { g, cost, pass: fails === 0, key: labels.join(''), colors: corner.colors };
+}
+// search the outline candidates: coarse grid, then refine around the best
+function findCube(source, sw, sh) {
+  const W = Math.min(240, sw), H = Math.round(sh * W / sw);
+  work.width = W; work.height = H; wctx.drawImage(source, 0, 0, W, H);
+  const px = wctx.getImageData(0, 0, W, H).data;
+  const span = (a, b, st) => { const o = []; for (let v = a; v <= b + 1e-9; v += st) o.push(+v.toFixed(3)); return o; };
+  const xr = W / 2 / (Math.min(W, H) * 0.3), yr = H / 2 / (Math.min(W, H) * 0.3); // shifts that keep the corner on screen
+  let best = null;
+  const tryOne = (s, dx, dy, k) => { const e = evaluate(px, W, H, candidate(W, H, s, dx, dy, k)); if (e && (!best || e.cost < best.cost)) best = Object.assign(e, { p: [s, dx, dy, k] }); };
+  for (const s of span(0.5, 1.7, 0.15)) for (const dx of span(-xr * 0.8, xr * 0.8, 0.13 * s)) for (const dy of span(-yr * 0.8, yr * 0.8, 0.13 * s)) for (const k of [0.4, 0.5, 0.6]) tryOne(s, dx, dy, k);
+  if (!best) return null;
+  const [s0, x0, y0, k0] = best.p, st = 0.03 * s0;
+  for (const s of span(s0 - 0.06, s0 + 0.06, 0.03)) for (const dx of span(x0 - 2 * st, x0 + 2 * st, st)) for (const dy of span(y0 - 2 * st, y0 + 2 * st, st)) for (const k of [k0 - 0.05, k0, k0 + 0.05]) tryOne(s, dx, dy, k);
+  const n = p => [p[0] / W, p[1] / H];
+  best.handles = { c: n(best.g.C), l: n(best.g.L), r: n(best.g.R), d: n(best.g.D) };
+  return best;
+}
+
+// full-resolution read of the captured frame at the outline
+function sampleShot(colors) {
+  const map = viewMap(colors);
+  const data = srcCtx.getImageData(0, 0, srcW, srcH).data;
+  const g = geom(([u, v]) => [u * srcW, v * srcH]);
+  const rad = Math.max(2, Math.min(len(g.eL), len(g.eR), len(g.eD)) / 3 * 0.2), step = Math.max(1, Math.floor(rad / 4));
+  const med = a => { a.sort((x, y) => x - y); return a[a.length >> 1]; };
+  const out = [];
+  for (const slot of [0, 2, 1]) for (let k = 0; k < 9; k++) {
+    const [x, y] = at(g.faces[slot], (k / 3) | 0, k % 3), R = [], G = [], B = [];
+    for (let yy = Math.round(y - rad); yy <= y + rad; yy += step) for (let xx = Math.round(x - rad); xx <= x + rad; xx += step) {
+      if (xx < 0 || yy < 0 || xx >= srcW || yy >= srcH) continue;
+      const p = (yy * srcW + xx) * 4; R.push(data[p]); G.push(data[p + 1]); B.push(data[p + 2]);
+    }
+    out.push({ i: map(slot * 9 + k), rgb: R.length ? [med(R), med(G), med(B)] : null });
+  }
+  const centers = [0, 2, 1].map(slot => out[slot === 0 ? 4 : slot === 2 ? 13 : 22].rgb);
+  const gain = centers.every(Boolean) ? centerGains(centers, colors) : [1, 1, 1];
+  for (const s of out) s.lab = s.rgb ? feat(s.rgb.map((c, j) => c * gain[j])) : null;
+  return out;
+}
+
+// ---- drawing ----
 function fit() {
   const cw = cv.clientWidth, ch = cv.clientHeight, s = Math.min(cw / srcW, ch / srcH);
   return { x: (cw - srcW * s) / 2, y: (ch - srcH * s) / 2, s };
+}
+function drawOutline(g, color, dots) {
+  const line = (a, b, w) => { ctx.lineWidth = w + 2; ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.stroke(); ctx.lineWidth = w; ctx.strokeStyle = color; ctx.stroke(); };
+  for (const slot of [0, 2, 1]) {
+    const fc = g.faces[slot];
+    for (let t = 0; t <= 3; t++) {
+      const w = t === 0 || t === 3 ? 3 : 1.2;
+      const pa = add(fc.O, [fc.a[0] * t / 3, fc.a[1] * t / 3]), pb = add(fc.O, [fc.b[0] * t / 3, fc.b[1] * t / 3]);
+      line(pa, add(pa, fc.b), w); line(pb, add(pb, fc.a), w);
+    }
+    if (dots) {
+      const ctr = at(fc, 1, 1), col = dots[[0, 2, 1].indexOf(slot)];
+      ctx.beginPath(); ctx.arc(ctr[0], ctr[1], 9, 0, Math.PI * 2);
+      ctx.fillStyle = css(`--c${col}`); ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = '#fff'; ctx.stroke();
+    }
+  }
 }
 function drawCam() {
   const dpr = window.devicePixelRatio || 1, cw = cv.clientWidth, ch = cv.clientHeight;
@@ -843,33 +998,30 @@ function drawCam() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, cw, ch);
   const source = haveShot ? srcCanvas : live ? video : null;
   if (!source || !srcW) return;
-  const r = fit();
+  const r = fit(), toXY = ([u, v]) => [r.x + u * srcW * r.s, r.y + v * srcH * r.s];
   ctx.drawImage(source, r.x, r.y, srcW * r.s, srcH * r.s);
-  const g = geom(([u, v]) => [r.x + u * srcW * r.s, r.y + v * srcH * r.s]);
-  const line = (a, b, w) => { ctx.lineWidth = w + 2; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.stroke(); ctx.lineWidth = w; ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.stroke(); };
-  for (const slot of [0, 2, 1]) {
-    const fc = g.faces[slot];
-    for (let t = 0; t <= 3; t++) {
-      const w = t === 0 || t === 3 ? 2.5 : 1.2;
-      const pa = add(fc.O, [fc.a[0] * t / 3, fc.a[1] * t / 3]), pb = add(fc.O, [fc.b[0] * t / 3, fc.b[1] * t / 3]);
-      line(pa, add(pa, fc.b), w); line(pb, add(pb, fc.a), w);
+  if (live && !haveShot) {
+    if (lock.best) { // the cube it found, firming up as it holds steady
+      const h = lock.best.handles, C = toXY(h.c);
+      ctx.globalAlpha = 0.4 + 0.6 * Math.min(1, lock.n / 3);
+      drawOutline(facesOf(C, sub(toXY(h.l), C), sub(toXY(h.r), C), sub(toXY(h.d), C)), css('--accent'), lock.best.colors);
+      ctx.globalAlpha = 1;
     }
-    const ctr = at(fc, 1, 1), col = SHOTS[shot].colors[[0, 2, 1].indexOf(slot)];
-    ctx.beginPath(); ctx.arc(ctr[0], ctr[1], 8, 0, Math.PI * 2);
-    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue(`--c${col}`); ctx.fill();
-    ctx.lineWidth = 2.5; ctx.strokeStyle = '#fff'; ctx.stroke();
+    return;
   }
-  for (const k of ['c', 'l', 'r', 'd']) {
-    const p = k === 'c' ? g.C : k === 'l' ? g.L : k === 'r' ? g.R : g.D;
-    ctx.beginPath(); ctx.arc(p[0], p[1], k === 'c' ? 13 : 11, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,.95)'; ctx.fill(); ctx.lineWidth = 3;
-    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent'); ctx.stroke();
+  if (!handles) return;
+  const g = geom(toXY);
+  drawOutline(g, 'rgba(255,255,255,.95)', null);
+  for (const p of [g.C, g.L, g.R, g.D]) {
+    ctx.beginPath(); ctx.arc(p[0], p[1], p === g.C ? 13 : 11, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,.95)'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = css('--accent'); ctx.stroke();
   }
 }
-// drag the dots: the near-corner dot moves the whole outline, the others reshape it
+
+// ---- manual dots: only when a frame couldn't be read on its own ----
 let camDrag = null;
 cv.addEventListener('pointerdown', e => {
-  if (!srcW || !handles) return;
+  if (!haveShot || !handles) return;
   e.preventDefault();
   const rect = cv.getBoundingClientRect(), x = e.clientX - rect.left, y = e.clientY - rect.top, r = fit();
   let best = null, bd = 34;
@@ -884,107 +1036,189 @@ cv.addEventListener('pointermove', e => {
   camDrag.x = x; camDrag.y = y;
   const move = k => { handles[k] = [handles[k][0] + du, handles[k][1] + dv]; };
   if (camDrag.k === 'c') ['c', 'l', 'r', 'd'].forEach(move); else move(camDrag.k);
-  if (!live || haveShot) drawCam();
+  drawCam();
 });
 const endCamDrag = () => { camDrag = null; };
 cv.addEventListener('pointerup', endCamDrag); cv.addEventListener('pointercancel', endCamDrag);
 
-function setSource(w, h) {
-  const k = Math.min(1, 1600 / Math.max(w, h));
-  srcW = Math.round(w * k); srcH = Math.round(h * k);
-  initHandles();
-}
-function camUI() {
-  $('shot1').setAttribute('aria-pressed', String(shot === 1));
-  $('shot2').setAttribute('aria-pressed', String(shot === 2));
-  $('camHint').textContent = haveShot ? 'Drag the dots onto the cube’s corners, then tap Use photo.' : SHOTS[shot].text + (live ? ' Line it up with the outline.' : '');
+// ---- flow ----
+const cap = c => COLOR_NAMES[c][0].toUpperCase() + COLOR_NAMES[c].slice(1);
+const scannedFaces = () => { const f = new Set(); for (const k in scans) k.split('').forEach(c => f.add(+c)); return f; };
+function setSource(w, h) { const k = Math.min(1, 1600 / Math.max(w, h)); srcW = Math.round(w * k); srcH = Math.round(h * k); }
+function camUI(hint) {
+  const seen = scannedFaces(), need = [0, 1, 2, 3, 4, 5].filter(f => !seen.has(f));
+  const first = !Object.keys(scans).length;
+  $('camLead').textContent = first ? 'Show a corner' : 'Now the opposite corner';
+  $('camHow').textContent = first ? 'Hold the cube so three faces face the camera.' : 'Turn the cube so these three faces face the camera:';
+  $('camChips').innerHTML = (first ? [] : need).map(c => `<div class="chip3"><span class="sw3" style="background:var(--c${c})"></span><b>${cap(c)}</b></div>`).join('');
+  $('camChips').hidden = first;
+  $('camHint').textContent = hint || (haveShot ? 'Couldn’t find the cube. Drag the dots onto its corners, then tap Use photo.'
+    : live ? 'It finds the cube and saves by itself.' : 'Take a photo showing three faces of the cube.');
   $('takeBig').hidden = haveShot || live;
-  $('shutter').hidden = !live || haveShot;
   $('retake').hidden = !haveShot;
-  $('camUse').disabled = !haveShot;
+  $('camUse').hidden = !haveShot;
+  $('shutter').hidden = !live || haveShot;
 }
-function liveLoop() { cancelAnimationFrame(camRAF); const tick = () => { if (!live || haveShot || $('cam').hidden) return; drawCam(); camRAF = requestAnimationFrame(tick); }; tick(); }
+function liveLoop() {
+  cancelAnimationFrame(camRAF);
+  const tick = t => {
+    if (!live || haveShot || $('cam').hidden) return;
+    if (t - lastDetect > 160 && t > cooldownUntil && video.videoWidth) {
+      lastDetect = t;
+      const b = findCube(video, video.videoWidth, video.videoHeight);
+      if (b && b.pass && scans[b.colors.join('')]) {
+        lock = { key: '', n: 0, best: b };
+        camUI('Already have this corner. Turn the cube to the opposite one.');
+      } else if (b && b.pass) {
+        lock.n = b.key === lock.key ? lock.n + 1 : 1; lock.key = b.key; lock.best = b;
+        camUI('Found it. Hold still…');
+        if (lock.n >= 3) { captureFrame(video, video.videoWidth, video.videoHeight, b.handles, b.colors); return; }
+      } else {
+        lock = { key: '', n: 0, best: null };
+        camUI(b ? 'Almost. Move a little closer and keep glare off the stickers.' : undefined);
+      }
+    }
+    drawCam();
+    camRAF = requestAnimationFrame(tick);
+  };
+  camRAF = requestAnimationFrame(tick);
+}
 async function startLive() {
   if (stream || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
   try {
     stream = await Promise.race([
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 } }, audio: false }),
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 } }, audio: false }),
       new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000)),
     ]);
     video = document.createElement('video'); video.playsInline = true; video.muted = true; video.srcObject = stream;
     await video.play();
     if (!video.videoWidth) await new Promise(r => video.addEventListener('loadedmetadata', r, { once: true }));
     if ($('cam').hidden) { stopLive(); return; }
-    live = true; if (!haveShot) setSource(video.videoWidth, video.videoHeight);
+    live = true; setSource(video.videoWidth, video.videoHeight);
     camUI(); liveLoop();
   } catch (e) { stream = null; live = false; camUI(); }
 }
 function stopLive() { cancelAnimationFrame(camRAF); if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; live = false; }
+function freshInput() { // a new file input each time, so a cancelled pick never leaves it stuck
+  const old = $('camFile'), inp = old.cloneNode(false);
+  inp.addEventListener('change', onPhoto);
+  old.replaceWith(inp);
+}
+let camSession = 0;
 function openCam() {
   if (stepping) exitSteps();
-  shot = scans[1] && !scans[2] ? 2 : 1;
-  haveShot = false;
+  if (gaming) exitGame();
+  if (st.every(v => v >= 0)) resetScans(); // a finished cube: scanning starts a new one
+  haveShot = false; handles = null; lock = { key: '', n: 0, best: null }; cooldownUntil = 0;
+  freshInput();
   $('cam').hidden = false; camUI();
   requestAnimationFrame(drawCam);
   startLive();
 }
-function closeCam() { stopLive(); $('cam').hidden = true; haveShot = false; }
+function closeCam() { stopLive(); $('cam').hidden = true; haveShot = false; lock = { key: '', n: 0, best: null }; }
 $('camBtn').onclick = openCam;
 $('camClose').onclick = closeCam;
-$('shot1').onclick = () => { shot = 1; camUI(); drawCam(); };
-$('shot2').onclick = () => { shot = 2; camUI(); drawCam(); };
-$('retake').onclick = () => { haveShot = false; camUI(); if (live) { setSource(video.videoWidth, video.videoHeight); liveLoop(); } else { drawCam(); $('camFile').click(); } };
-$('shutter').onclick = () => {
+$('retake').onclick = () => { haveShot = false; camUI(); drawCam(); if (live) liveLoop(); else { freshInput(); $('camFile').click(); } };
+$('shutter').onclick = () => { // manual capture: freeze the frame; place the dots where the cube seems to be
   if (!live) return;
-  setSource(video.videoWidth, video.videoHeight);
-  srcCanvas.width = srcW; srcCanvas.height = srcH; srcCtx.drawImage(video, 0, 0, srcW, srcH);
-  haveShot = true; camUI(); drawCam();
+  const b = findCube(video, video.videoWidth, video.videoHeight);
+  if (b && b.pass) { captureFrame(video, video.videoWidth, video.videoHeight, b.handles, b.colors); return; }
+  freeze(video, video.videoWidth, video.videoHeight, b);
 };
-$('camFile').addEventListener('change', async e => {
-  const file = e.target.files && e.target.files[0]; e.target.value = '';
+function freeze(source, w, h, b) {
+  setSource(w, h);
+  srcCanvas.width = srcW; srcCanvas.height = srcH; srcCtx.drawImage(source, 0, 0, srcW, srcH);
+  handles = b ? b.handles : guideHandles(srcW, srcH);
+  haveShot = true; camUI(); drawCam();
+}
+async function onPhoto(e) {
+  const file = e.target.files && e.target.files[0];
   if (!file) return;
   const url = URL.createObjectURL(file), img = new Image();
   try {
     img.src = url; await img.decode();
-    setSource(img.naturalWidth, img.naturalHeight);
-    srcCanvas.width = srcW; srcCanvas.height = srcH; srcCtx.drawImage(img, 0, 0, srcW, srcH);
-    haveShot = true; camUI(); drawCam();
+    camUI('Looking for the cube…');
+    await new Promise(r => setTimeout(r, 30));
+    const b = findCube(img, img.naturalWidth, img.naturalHeight);
+    if (b && b.pass && !scans[b.colors.join('')]) { captureFrame(img, img.naturalWidth, img.naturalHeight, b.handles, b.colors); return; }
+    freeze(img, img.naturalWidth, img.naturalHeight, b);
   } catch (err) { toast('Couldn’t open that photo. Try another.'); }
-  finally { URL.revokeObjectURL(url); }
-});
+  finally { URL.revokeObjectURL(url); freshInput(); }
+}
+$('camFile').addEventListener('change', onPhoto);
+$('camUse').onclick = () => { // manual dots: read the corner from the centers under the dots
+  if (!haveShot) return;
+  const g = geom(([u, v]) => [u * srcW, v * srcH]);
+  const data = srcCtx.getImageData(0, 0, srcW, srcH).data;
+  const r = Math.max(2, Math.min(len(g.eL), len(g.eR), len(g.eD)) / 3 * 0.2);
+  const cs = [0, 2, 1].map(slot => { const [x, y] = at(g.faces[slot], 1, 1); const q = patch(data, srcW, srcH, x, y, r); return q && q.rgb; });
+  const corner = cs.every(Boolean) && readCorner(cs);
+  if (!corner) { camUI('Couldn’t tell which corner this is. Move the dots so the middle of each face sits on its center sticker.'); return; }
+  finishShot(applyShot(corner.colors));
+};
 window.addEventListener('resize', () => { if (!$('cam').hidden) drawCam(); });
 
-// color reading
-// brightness-free color: chromaticity plus saturation, so a face in shadow reads the same as one in light
-function feat([r, g, b]) {
-  const sum = Math.max(1, r + g + b), mx = Math.max(r, g, b), mn = Math.min(r, g, b);
-  return [r / sum, g / sum, 0.5 * (mx - mn) / Math.max(1, mx)];
+function captureFrame(source, w, h, hs, colors) {
+  setSource(w, h);
+  srcCanvas.width = srcW; srcCanvas.height = srcH; srcCtx.drawImage(source, 0, 0, srcW, srcH);
+  handles = hs;
+  finishShot(applyShot(colors));
 }
-function sampleShot() {
-  const data = srcCtx.getImageData(0, 0, srcW, srcH).data;
-  const g = geom(([u, v]) => [u * srcW, v * srcH]);
-  const rad = Math.max(2, Math.min(len(g.eL), len(g.eR), len(g.eD)) / 3 * 0.2), step = Math.max(1, Math.floor(rad / 4));
-  const out = [];
-  for (const slot of [0, 2, 1]) for (let k = 0; k < 9; k++) {
-    const [x, y] = at(g.faces[slot], (k / 3) | 0, k % 3);
-    const R = [], G = [], B = [];
-    for (let yy = Math.round(y - rad); yy <= y + rad; yy += step) for (let xx = Math.round(x - rad); xx <= x + rad; xx += step) {
-      if (xx < 0 || yy < 0 || xx >= srcW || yy >= srcH) continue;
-      const p = (yy * srcW + xx) * 4; R.push(data[p]); G.push(data[p + 1]); B.push(data[p + 2]);
-    }
-    const med = a => { a.sort((x, y) => x - y); return a[a.length >> 1]; };
-    out.push({ i: SHOTS[shot].map(slot * 9 + k), rgb: R.length ? [med(R), med(G), med(B)] : null });
+function finishShot(res) {
+  const stage = document.querySelector('.camstage');
+  stage.classList.remove('flash'); void stage.offsetWidth; stage.classList.add('flash');
+  haveShot = false; lock = { key: '', n: 0, best: null };
+  const complete = st.every(v => v >= 0) || A.total === 1n;
+  if (!complete && A.total !== 0n) {
+    cooldownUntil = performance.now() + 1200;
+    camUI(`Got ${res.n} stickers.`);
+    setTimeout(() => { if (!$('cam').hidden && !lock.best) camUI(); }, 1800);
+    if (live) liveLoop(); else freshInput();
+    return;
   }
-  // white balance on the white center (side 1) or the brightest near-grey sticker
-  let ref = (out.find(s => s.i === 4) || {}).rgb;
-  if (!ref) {
-    const greys = out.filter(s => s.rgb && (Math.max(...s.rgb) - Math.min(...s.rgb)) / Math.max(1, Math.max(...s.rgb)) < 0.3);
-    greys.sort((a, b) => Math.min(...b.rgb) - Math.min(...a.rgb));
-    ref = greys.length ? greys[0].rgb : null;
+  closeCam();
+  const parts = [`Scanned ${Object.keys(scans).length} corner${Object.keys(scans).length === 1 ? '' : 's'}`];
+  if (res.fixed) parts.push(`${res.fixed} colors fixed by cube rules`);
+  if (res.extra) parts.push(`${res.extra} stickers worked out`);
+  toast(parts.join(', ') + (A.total === 0n ? '. Some colors clash: fix the red stickers.' : '. Check the cube, then Solve.'));
+}
+function applyShot(colors) {
+  const fresh = !Object.keys(scans).length, key = colors.join('');
+  scans[key] = sampleShot(colors);
+  const seen = new Map();
+  for (const k in scans) for (const s of scans[k]) if (s.lab) seen.set(s.i, s.lab);
+  const dist2 = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
+  let refs = REF.map((d, c) => seen.get(c * 9 + 4) || d);
+  // a new scan starts a new cube; later corners keep anything typed in by hand
+  const base = fresh ? emptyState() : Int8Array.from(st);
+  for (const i of seen.keys()) if (i % 9 !== 4) base[i] = -1;
+  const costFor = () => Array.from({ length: 54 }, (_, i) => {
+    if (i % 9 === 4) return [0, 1, 2, 3, 4, 5].map(c => c === ((i / 9) | 0) ? 0 : Infinity);
+    if (seen.has(i)) return refs.map(r => dist2(seen.get(i), r));
+    if (base[i] >= 0) return [0, 1, 2, 3, 4, 5].map(c => c === base[i] ? 0 : Infinity);
+    return [0, 0, 0, 0, 0, 0];
+  });
+  let fitted = decodeCube(costFor());
+  if (fitted) { // refine each color's reference from what was decoded, then decode again
+    refs = refs.map((r, c) => {
+      const mine = [...seen].filter(([i]) => fitted[i] === c).map(([, f]) => f);
+      return mine.length >= 2 ? [0, 1, 2].map(k => mine.reduce((t, f) => t + f[k], 0) / mine.length) : r;
+    });
+    fitted = decodeCube(costFor()) || fitted;
   }
-  const gain = ref ? ref.map(c => Math.max(0.5, Math.min(3, 230 / Math.max(1, c)))) : [1, 1, 1];
-  for (const s of out) s.lab = s.rgb ? feat(s.rgb.map((c, j) => c * gain[j])) : null;
-  return out;
+  const work2 = Int8Array.from(base);
+  let fixed = 0;
+  for (const [i, f] of seen) {
+    if (i % 9 === 4) continue;
+    const d = refs.map(r => dist2(f, r)), raw = d.indexOf(Math.min(...d));
+    work2[i] = fitted ? fitted[i] : raw;
+    if (fitted && fitted[i] !== raw) fixed++;
+  }
+  history.push(Int8Array.from(st));
+  st = work2; render();
+  const extra = autofill();
+  if (extra) history.pop(); // one undo step for the whole scan
+  return { n: scans[key].filter(s => s.i % 9 !== 4).length, fixed, extra, ok: !!fitted };
 }
 // Most likely legal cube: every corner/edge slot picks a (piece, twist) whose colors best match what was seen.
 // Same mask DP as analyze(), minimising cost instead of counting, so one misread can't drag its neighbours along.
@@ -1027,50 +1261,71 @@ function decodeCube(cost) {
 }
 function resetScans() { for (const k in scans) delete scans[k]; }
 function forgetScan(i) { for (const k in scans) scans[k] = scans[k].filter(s => s.i !== i); }
-function applyShot() {
-  scans[shot] = sampleShot();
-  const seen = new Map();
-  for (const k in scans) for (const s of scans[k]) if (s.lab) seen.set(s.i, s.lab);
-  const dist2 = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
-  // references: defaults, replaced by the centers the camera saw
-  let refs = DEFAULT_RGB.map(feat).map((d, c) => seen.get(c * 9 + 4) || d);
-  // stickers not from a photo stay as they are; photographed ones are re-decided from all photos together
-  const base = Int8Array.from(st);
-  for (const i of seen.keys()) if (i % 9 !== 4) base[i] = -1;
-  const costFor = () => Array.from({ length: 54 }, (_, i) => {
-    if (i % 9 === 4) return [0, 1, 2, 3, 4, 5].map(c => c === ((i / 9) | 0) ? 0 : Infinity);
-    if (seen.has(i)) return refs.map(r => dist2(seen.get(i), r));
-    if (base[i] >= 0) return [0, 1, 2, 3, 4, 5].map(c => c === base[i] ? 0 : Infinity);
-    return [0, 0, 0, 0, 0, 0];
-  });
-  let fit = decodeCube(costFor());
-  if (fit) { // refine each color's reference from what was decoded, then decode again
-    refs = refs.map((r, c) => {
-      const mine = [...seen].filter(([i]) => fit[i] === c).map(([, f]) => f);
-      return mine.length >= 2 ? [0, 1, 2].map(k => mine.reduce((t, f) => t + f[k], 0) / mine.length) : r;
-    });
-    fit = decodeCube(costFor()) || fit;
-  }
-  const work = Int8Array.from(base);
-  let fixed = 0;
-  for (const [i, f] of seen) {
-    if (i % 9 === 4) continue;
-    const d = refs.map(r => dist2(f, r)), raw = d.indexOf(Math.min(...d));
-    work[i] = fit ? fit[i] : raw;
-    if (fit && fit[i] !== raw) fixed++;
-  }
-  history.push(Int8Array.from(st));
-  st = work; render();
-  const extra = autofill();
-  if (extra) history.pop(); // one undo step for the whole scan
-  closeCam();
-  const n = scans[shot].filter(s => s.i % 9 !== 4).length;
-  const parts = [`Read ${n} stickers`];
-  if (fixed) parts.push(`${fixed} fixed by cube rules`);
-  if (extra) parts.push(`${extra} more worked out`);
-  toast(parts.join(', ') + (A.total > 1n ? '. Now photo the other side.' : fit ? '. Check the cube, then Solve.' : '. Some colors clash: fix the red stickers.'));
+
+// ---------- play mode: solve a random cube, one hint at a time ----------
+let gaming = false, game = null, gameTimer = 0, hintBusy = false;
+const pad = $('pad');
+for (const suffix of ['', "'"]) for (const f of [0, 1, 2, 3, 4, 5]) {
+  const b = document.createElement('button'), m = FACE[f] + suffix;
+  b.textContent = m; b.style.setProperty('--c', `var(--c${f})`);
+  b.setAttribute('aria-label', `Turn the ${FACE_NAMES[f].toLowerCase()} layer ${suffix ? 'counter-clockwise' : 'clockwise'}`);
+  b.onclick = () => playMove(m);
+  pad.appendChild(b);
 }
-$('camUse').onclick = () => { if (haveShot) applyShot(); };
+function scramble() {
+  const out = []; let last = -1;
+  while (out.length < 25) { const f = (Math.random() * 6) | 0; if (f === last) continue; last = f; out.push(FACE[f] + ['', "'", '2'][(Math.random() * 3) | 0]); }
+  return out;
+}
+const fmtTime = ms => { const t = Math.floor(ms / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
+function gameStatus() {
+  if (!game) return;
+  const t = fmtTime((game.end || Date.now()) - game.start);
+  setStatus(game.end ? `<b>Solved!</b> ${game.moves} moves · ${t}` : `<b>${game.moves}</b> moves · ${t}${game.hint ? ` · Next: <b>${game.hint}</b>` : ''}`);
+}
+function startGame() {
+  if (stepping) exitSteps();
+  let s = solvedState(); for (const m of scramble()) s = applyMove(s, m);
+  game = { st: s, moves: 0, start: Date.now(), end: 0, hint: null };
+  gaming = true; document.body.classList.add('stepping');
+  $('editUI').hidden = true; $('stepUI').hidden = true; $('gameUI').hidden = false; $('closeSteps').hidden = false;
+  cube.cancel(); showArrow(null); cube.set(s); cube.setView(...HOME, true);
+  clearInterval(gameTimer); gameTimer = setInterval(gameStatus, 1000); gameStatus();
+}
+function exitGame() {
+  clearInterval(gameTimer); gaming = false; game = null;
+  cube.cancel(); showArrow(null); document.body.classList.remove('stepping');
+  $('editUI').hidden = false; $('gameUI').hidden = true; $('closeSteps').hidden = true;
+  cube.setView(...HOME, true); render();
+}
+function playMove(m) {
+  if (!game || game.end) return;
+  cube.cancel();
+  game.st = applyMove(game.st, m); game.moves++;
+  const target = game.st;
+  if (game.hint) { game.hint = null; showArrow(null); }
+  cube.turn(m, reduceMotion() ? 0 : 280, () => cube.set(target));
+  if (isSolved(game.st)) { game.end = Date.now(); clearInterval(gameTimer); toast(`Solved in ${game.moves} moves!`); }
+  gameStatus();
+}
+async function giveHint() { // only the single next move, and only when asked
+  if (!game || game.end || hintBusy) return;
+  hintBusy = true; $('hintBtn').textContent = solver.ready ? 'Thinking…' : 'Warming up…';
+  const key = packState(game.st);
+  try {
+    const raw = await solver.solve(Array.from(game.st, v => FACE[v]).join(''));
+    if (!game || packState(game.st) !== key) return; // they moved meanwhile
+    const m = raw.trim().split(/\s+/)[0];
+    if (!m) return;
+    const { f, q } = parseMove(m);
+    game.hint = m; showArrow(m); cube.setView(...VIEWS[f], true); gameStatus();
+    toast(`Turn the ${FACE_NAMES[f].toLowerCase()} layer ${DIR_TEXT[q]}`);
+  } catch (e) { toast('Couldn’t get a hint. Try again.'); }
+  finally { hintBusy = false; $('hintBtn').textContent = 'Hint'; }
+}
+$('gameBtn').onclick = startGame;
+$('newGame').onclick = startGame;
+$('hintBtn').onclick = giveHint;
 
 render();
 window.__cube = { analyze, applyMove, solvedState, setState(s) { st = Int8Array.from(s); resetScans(); render(); }, get st() { return st; } };
