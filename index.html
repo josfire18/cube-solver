@@ -44,7 +44,9 @@ html, body { height: 100%; }
 body {
   background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.4;
   overflow: hidden; -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation;
 }
+.scene, .scene * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; outline: none; }
 button { font: inherit; color: inherit; touch-action: manipulation; -webkit-user-select: none; user-select: none; cursor: pointer; }
 button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 button:disabled { opacity: .35; cursor: default; }
@@ -302,24 +304,30 @@ function makeCube3D(scene, root, onTap) {
     el.style.transform = base; root.appendChild(el);
     cubies.push({ el, p, faces, base });
   }
-  let rx = -26, ry = -36, busy = null, drag = null;
-  const view = () => { root.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`; };
+  // orientation is a free rotation matrix: each drag turns the cube about screen axes, so there is no end stop
+  const orient = (x, y) => new DOMMatrix().rotateAxisAngle(1, 0, 0, x).rotateAxisAngle(0, 1, 0, y);
+  let m = orient(-26, -36), busy = null, drag = null;
+  const view = () => { root.style.transform = m.toString(); };
   view();
   scene.addEventListener('pointerdown', e => {
     if (e.target.closest('button')) return;
+    e.preventDefault();
     const f = e.target.closest && e.target.closest('.cf[data-i]');
-    drag = { x: e.clientX, y: e.clientY, rx, ry, moved: false, i: f ? +f.dataset.i : null };
+    drag = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, moved: false, i: f ? +f.dataset.i : null };
+    root.style.transition = '';
     scene.setPointerCapture(e.pointerId);
   });
   scene.addEventListener('pointermove', e => {
     if (!drag) return;
-    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-    if (!drag.moved && Math.hypot(dx, dy) < 8) return;
+    if (!drag.moved && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 8) return;
     drag.moved = true;
-    ry = drag.ry + dx * 0.5;
-    rx = Math.max(-88, Math.min(88, drag.rx - dy * 0.5));
+    const dx = e.clientX - drag.lx, dy = e.clientY - drag.ly;
+    drag.lx = e.clientX; drag.ly = e.clientY;
+    m = new DOMMatrix().rotateAxisAngle(0, 1, 0, dx * 0.5).rotateAxisAngle(1, 0, 0, -dy * 0.5).multiply(m);
     view();
   });
+  scene.addEventListener('dblclick', e => e.preventDefault());
+  scene.addEventListener('selectstart', e => e.preventDefault());
   scene.addEventListener('pointerup', () => { if (drag && !drag.moved && drag.i != null && onTap) onTap(drag.i); drag = null; });
   scene.addEventListener('pointercancel', () => { drag = null; });
   return {
@@ -336,9 +344,9 @@ function makeCube3D(scene, root, onTap) {
       }
     },
     setView(x, y, animate) {
-      const d = ((y - ry) % 360 + 540) % 360 - 180; // shortest way round
-      const changed = Math.abs(x - rx) > 1 || Math.abs(d) > 1;
-      rx = x; ry += d;
+      const t = orient(x, y), a = m.toFloat64Array(), b = t.toFloat64Array();
+      const changed = a.some((v, k) => Math.abs(v - b[k]) > 0.02);
+      m = t;
       root.style.transition = animate && changed ? 'transform .38s ease' : '';
       view();
       if (animate && changed) setTimeout(() => { root.style.transition = ''; }, 400);
